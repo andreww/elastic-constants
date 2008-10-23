@@ -23,3 +23,15 @@ Orthorhombic: e1+e4 and e2+e5 and e3+e6
 Monoclinic: e1+e4 and e3+e6 and e2 and e5
 Triclinic: e1 to e6 separately 
 
+Dependencies
+------------
+
+The script is written in Python, so you must have that installed. I use Python 2.5, but earlier versions might work too. 
+
+SciPy (http://www.scipy.org/)
+
+(Optional) For CML input/output, you'll need Golem (http://www.lexical.org.uk/golem/), and lxml (http://codespeak.net/lxml/).
+
+(Optional) For graphical output, you'll need Matplotlib (http://matplotlib.sourceforge.net/).
+
+
