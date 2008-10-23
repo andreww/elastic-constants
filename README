@@ -1,0 +1,25 @@
+The primary use of this script is as an alternative, Open, back-end to
+Materials Studio's 'Calculate Elastic Constants' feature.
+
+It was designed with CASTEP in mind, and only deals with the set of strains
+that Materials Studio generates. As well as CASTEP's native formats, it also
+accepts input in CML format, and can generate CML output. It also has the
+option to generate an at-a-glance view, which allows the user to verify the
+success, or otherwise, of all of the various linear fits.
+
+It should be fairly easy to convert/generalize it for other strains and
+simulation codes.
+
+
+Supported Strain Patterns
+-------------------------
+
+Cubic: e1+e4
+Hexagonal: e3 and e1+e4
+Trigonal-High (32, 3m, -3m): e1 and e3+e4
+Trigonal-Low (3, -3): e1 and e3+e4
+Tetragonal: e1+e4 and e3+e6
+Orthorhombic: e1+e4 and e2+e5 and e3+e6
+Monoclinic: e1+e4 and e3+e6 and e2 and e5
+Triclinic: e1 to e6 separately 
+
