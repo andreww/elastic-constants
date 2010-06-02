@@ -622,14 +622,24 @@ def main(input_options, libmode=False):
 			# do the fit
 			(cijFitted,intercept,r,tt,stderr) = stats.linregress(strain[:,index2-1],stress[:,index1-1])
 
-			# correct for scipy weirdness - see http://www.scipy.org/scipy/scipy/ticket/8
-			stderr = S.sqrt((numsteps * stderr**2)/(numsteps-2))
-			error  = stderr/sqrt(sum(square(strain[:,index2-1])))
+			if (S.__version__ < '0.7.0'):
+				# correct for scipy weirdness - see http://www.scipy.org/scipy/scipy/ticket/8
+				# This was fixed before 0.7.0 release. Maybe in some versions of 0.6.x too - 
+				# will report huge errors if the check is wrong
+				stderr = S.sqrt((numsteps * stderr**2)/(numsteps-2))
+				error  = stderr/sqrt(sum(square(strain[:,index2-1])))
+			else:
+				# Work out the error ourselves as I cannot get it from
+				# stderr and this has been checked with gnuplot's fitter
+				fit_str = ((strain[:,index2-1] * cijFitted) + intercept)
+				error = sqrt((sum(square(stress[:,index1-1] - fit_str)) / \
+				             (numsteps-2))/(sum(square(strain[:,index2-1]))))
 			
 			# print info about the fit
 			print '\n'
-			print     'Cij (gradient)          :    ',cijFitted
+			print     'Cij (gradient)          :    ', cijFitted
 			print     'Error in Cij            :    ', error
+			print     'Intercept               :    ', intercept
 			if abs(r) > 0.9:
 				print 'Correlation coefficient :    ',r
 			else:
