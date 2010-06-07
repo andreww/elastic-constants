@@ -85,29 +85,66 @@ def main(input_options, libmode=False):
 
 		return options, arguments
 
+
+
+	# regular expression to match the whole of the final cell from a .castep file
+	dotcastep_latt_RE = re.compile("""\sBFGS:\sFinal\sConfiguration:\s*\n
+	            =+\s*\n\s*\n\s+\-+\s*\n\s+Unit\sCell\s*\n\s+\-+\s*\n
+		    \s+Real\sLattice\(A\)\s+Reciprocal\sLattice\(1/A\)\s*\n
+	            \s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s*\n
+	            \s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s*\n
+	            \s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s*\n""",
+	          re.VERBOSE)
+	# Start of the 'final configuration'
+	dotcastep_infinal_RE = re.compile("BFGS: Final Configuration:")
+	# Once inside final configuation, this should only match a line with atoms
+	dotcastep_atomline_RE = re.compile("x\s+(\w+)\s+\d+\s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s+x")
 	def parse_dotcastep(seedname):
-		# regular expression to match the whole of the final cell from a .castep file
-		m_BFGS_cell = re.compile("\sBFGS:\sFinal\sConfiguration:\s*\n=+\s*\n\s*\n\s+\-+\s*\n\s+Unit\sCell\s*\n\s+\-+\s*\n\s+Real\sLattice\(A\)\s+Reciprocal\sLattice\(1/A\)\s*\n\s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s*\n\s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s*\n\s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s*\n")
 		dotCastep = open(seedname+".castep","r")
-		latticeblock = m_BFGS_cell.findall(dotCastep.read())[-1] # Get the last block - handle concat restarts
-                dotCastep.close()
+		# Find the lattice
+		latticeblock = dotcastep_latt_RE.findall(dotCastep.read())[-1] # Get the last block - handle concat restarts
 		lattice = []
 		lattice.append([float(latticeblock[0]), float(latticeblock[1]), float(latticeblock[2])])
 		lattice.append([float(latticeblock[6]), float(latticeblock[7]), float(latticeblock[8])])
 		lattice.append([float(latticeblock[12]), float(latticeblock[13]), float(latticeblock[14])])
+		# rewind and search for and final atomic positions (these will be absent if e.g. they are all on symmetry positions)
+		dotCastep.seek(0)
+		in_atoms = False
+		atoms = []
+		for line in dotCastep:
+			if (in_atoms and dotcastep_atomline_RE.search(line)):
+				atom_line = dotcastep_atomline_RE.search(line)
+				atoms.append([atom_line.group(1), float(atom_line.group(2)), float(atom_line.group(3)), float(atom_line.group(4))])
+			elif ((not in_atoms) and (dotcastep_infinal_RE.search(line))):
+				in_atoms = True
+			
+                dotCastep.close()
 		
-		return lattice
+		return (lattice, atoms)
 
-	def produce_dotcell(seedname, filename, newlattice):
-		lattice_start_RE = re.compile("%BLOCK\sLATTICE_CART",re.IGNORECASE)
-		lattice_end_RE = re.compile("%ENDBLOCK\sLATTICE_CART",re.IGNORECASE)
+	# Regular expressions to match a lattice block in a castep .cell file. Note that these
+	# can be of the form %block lattice_abc or %block lattice_cart and are case insensitive
+	dotcell_lattice_start_RE = re.compile("^\s*%BLOCK\s+LATTICE_(?:CART|ABC)",re.IGNORECASE)
+	dotcell_lattice_end_RE = re.compile("^\s*%ENDBLOCK\s+LATTICE_(?:CART|ABC)",re.IGNORECASE)
+	dotcell_atoms_start_RE = re.compile("^\s*%BLOCK\s+POSITIONS_(?:FRAC|ABS)", re.IGNORECASE)
+	dotcell_atoms_end_RE = re.compile("^\s*%ENDBLOCK\s+POSITIONS_(?:FRAC|ABS)", re.IGNORECASE)
+	def produce_dotcell(seedname, filename, newlattice, atoms):
+		"""
+		produce_dotcell: reads <seedname>.cell (CASTEP cell file
+		and writes a new .cell file to <filename> replacing the 
+		lattice block with a new crystalographic lattice <newlattice> 
+		(which should be supplied as a list of three lists, each with 
+		three elements). Also adds command to fix cell during optimization.
+		"""
 		in_lattice = False
+		in_atoms = False
+		have_atoms = (atoms != []) # If we have an empty list, no atoms were optimized so just leave them in the .cell file.
 		inputfile = open(seedname+".cell", "r")
 		outputfile = open(filename, "w")
 		for line in inputfile:
-			if (lattice_end_RE.search(line) and in_lattice):
+			if (dotcell_lattice_end_RE.search(line) and in_lattice):
 				in_lattice = False
-			elif (lattice_start_RE.search(line) and not in_lattice):
+			elif (dotcell_lattice_start_RE.search(line) and not in_lattice):
 				outputfile.write("%block LATTICE_CART\n")
 				outputfile.write(str(defcell[0][0]) + " " + str(defcell[0][1]) + " " + str(defcell[0][2]) + "\n")
 				outputfile.write(str(defcell[1][0]) + " " + str(defcell[1][1]) + " " + str(defcell[1][2]) + "\n")
@@ -115,7 +152,15 @@ def main(input_options, libmode=False):
 				outputfile.write("%endblock LATTICE_CART\n")
 				outputfile.write("FIX_ALL_CELL true\n")
 				in_lattice = True
-			elif(not in_lattice):
+			elif (dotcell_atoms_end_RE.search(line) and in_atoms and have_atoms):
+				in_atoms = False
+			elif ((dotcell_atoms_start_RE.search(line)) and (not in_atoms) and have_atoms):
+				outputfile.write("%block POSITIONS_FRAC\n")
+				for atom in atoms:
+					outputfile.write("  " + atom[0] + "  " + str(atom[1]) + "  " + str(atom[2]) + "  " + str(atom[3]) + "\n")
+				outputfile.write("%endblock POSITIONS_FRAC\n")
+				in_atoms = True
+			elif(not (in_lattice or in_atoms)):
 				outputfile.write(line)
 		inputfile.close
 		outputfile.close
@@ -123,7 +168,7 @@ def main(input_options, libmode=False):
 	options, arguments = get_options()
 	seedname = arguments[0]
 	
-	cell = parse_dotcastep(seedname)
+	(cell,atoms) = parse_dotcastep(seedname)
 
 	cijdat = open(seedname+".cijdat","w")
 	print "\nWriting strain data to ", seedname+".cijdat\n"
@@ -176,7 +221,7 @@ def main(input_options, libmode=False):
 				cijdat.write(str(this_strain[0]) + " " + str(this_strain[5]) + " " + str(this_strain[4]) + "\n")
 				cijdat.write(str(this_strain[5]) + " " + str(this_strain[1]) + " " + str(this_strain[3]) + "\n")
 				cijdat.write(str(this_strain[4]) + " " + str(this_strain[3]) + " " + str(this_strain[2]) + "\n")
-				produce_dotcell(seedname, pattern_name+".cell", defcell)
+				produce_dotcell(seedname, pattern_name+".cell", defcell, atoms)
 				os.symlink(seedname+".param", pattern_name+".param")
 	
 
