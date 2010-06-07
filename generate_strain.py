@@ -14,7 +14,7 @@ import sys
 import os
 import optparse
 import re
-import math
+import numpy as np
 
 def GetStrainPatterns(code):
 	"""
@@ -70,151 +70,167 @@ def GetStrainPatterns(code):
 
 	return pattern	
 
+def get_options(input_options, libmode):
+	"""
+	Just extracts the command line arguments into an options object
+	"""
+	if not libmode:
+		p = optparse.OptionParser()
+		p.add_option('--debug', '-d', action='store_true', \
+		              help="Debug mode (output to stdout rather than file)")
+		p.add_option('--num_steps', '-n', action='store', type='int', dest="numsteps")
+		p.add_option('--strain_mag', '-s', action='store', type='float', dest="strain")
+		p.add_option('--lattice_type', '-l', action='store', type='int', dest="lattice")
+		options,arguments = p.parse_args(args=input_options)
+
+	return options, arguments
+
+# regular expression to match the whole of the final cell from a .castep file
+dotcastep_latt_RE = re.compile("""\sBFGS:\sFinal\sConfiguration:\s*\n
+            =+\s*\n\s*\n\s+\-+\s*\n\s+Unit\sCell\s*\n\s+\-+\s*\n
+	    \s+Real\sLattice\(A\)\s+Reciprocal\sLattice\(1/A\)\s*\n
+            \s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s*\n
+            \s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s*\n
+            \s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s*\n""",
+          re.VERBOSE)
+# Start of the 'final configuration'
+dotcastep_infinal_RE = re.compile("BFGS: Final Configuration:")
+# Once inside final configuation, this should only match a line with atoms
+dotcastep_atomline_RE = re.compile("x\s+(\w+)\s+\d+\s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s+x")
+
+def parse_dotcastep(seedname):
+	"""
+	Extract lattice and atom positions from a .castep
+	file. List of atoms may be empty (e.g. MgO)
+	"""
+	dotCastep = open(seedname+".castep","r")
+	# Find the lattice
+	latticeblock = dotcastep_latt_RE.findall(dotCastep.read())[-1] # Get the last block - handle concat restarts
+	lattice = []
+	lattice.append([float(latticeblock[0]), float(latticeblock[1]), float(latticeblock[2])])
+	lattice.append([float(latticeblock[6]), float(latticeblock[7]), float(latticeblock[8])])
+	lattice.append([float(latticeblock[12]), float(latticeblock[13]), float(latticeblock[14])])
+	# rewind and search for and final atomic positions (these will be absent if e.g. they are all on symmetry positions)
+	dotCastep.seek(0)
+	in_atoms = False
+	atoms = []
+	for line in dotCastep:
+		if (in_atoms and dotcastep_atomline_RE.search(line)):
+			atom_line = dotcastep_atomline_RE.search(line)
+			atoms.append([atom_line.group(1), float(atom_line.group(2)), \
+			              float(atom_line.group(3)), float(atom_line.group(4))])
+		elif ((not in_atoms) and (dotcastep_infinal_RE.search(line))):
+			in_atoms = True
+		
+	dotCastep.close()
+	print lattice
+	a, b, c, al, be, ga = cellCART2cellABC(lattice)
+	print a, b, c, al, be, ga
+	lattice = cellABC2cellCART(a, b, c, al, be, ga)
+	print lattice
+	
+	return (lattice, atoms)
+
+def cellABC2cellCART (a, b, c, alp, bet, gam):
+	"""
+	Given three lattice vector lengths and angles, returns
+	three vectors (as list of lists:
+	[[a_x, a_y, a_z], [b_x, b_y, b_z], [c_x, c_y, c_z]]) representing
+	the vectors on a cartisian frame. 
+	"""
+	# Get lattice vetors on cart frame from a, b, c and angles
+	# For monoclinic, b // Y and c // Z
+	if (alp == 90.0):
+      		cosa = 0.0;
+	else:
+      		cosa = np.cos(np.radians(alp))
+	if (bet == 90.0):
+     		cosb = 0.0
+	else:
+		cosb = np.cos(np.radians(bet))
+	if (gam == 90.0):
+		sing = 1.0
+		cosg = 0.0
+	else:
+		sing = np.sin(np.radians(gam))
+		cosg = np.cos(np.radians(gam))
+	rv21 = 0.0
+	rv31 = 0.0
+	rv32 = 0.0
+	rv11 = a
+	rv12 = b*cosg
+	rv22 = b*sing
+	rv13 = c*cosb
+	rv23 = c*(cosa - cosg*cosb)/sing
+	trm1 = rv23/c
+	rv33 = c*np.sqrt(1.0 - cosb**2 - trm1**2)
+	return [[rv11, rv12, rv13], [rv21, rv22, rv23], [rv31, rv32, rv33]]
+
+def cellCART2cellABC (lattice):
+	"""
+	Given three latice vectors (with three componets each) return 
+	the lattice vector lengths and angles between them. Input argument
+	should be [[a_x, a_y, a_z], [b_x, b_y, bz], [c_x, c_y, c_z]]. Angles
+	returned in degrees.
+	"""
+	# Does not care about orentation...
+	a = np.sqrt(lattice[0][0]**2 + lattice[0][1]**2 + lattice[0][2]**2)
+	b = np.sqrt(lattice[1][0]**2 + lattice[1][1]**2 + lattice[1][2]**2)
+	c = np.sqrt(lattice[2][0]**2 + lattice[2][1]**2 + lattice[2][2]**2)
+	gam = np.arccos(np.dot(lattice[0],lattice[1]) / (a*b))
+	bet = np.arccos(np.dot(lattice[0],lattice[2]) / (a*c))
+	alp = np.arccos(np.dot(lattice[1],lattice[2]) / (b*c))
+	return a, b, c, np.degrees(alp), np.degrees(bet), np.degrees(gam)
+
+
+# Regular expressions to match a lattice block in a castep .cell file. Note that these
+# can be of the form %block lattice_abc or %block lattice_cart and are case insensitive
+dotcell_lattice_start_RE = re.compile("^\s*%BLOCK\s+LATTICE_(?:CART|ABC)",re.IGNORECASE)
+dotcell_lattice_end_RE = re.compile("^\s*%ENDBLOCK\s+LATTICE_(?:CART|ABC)",re.IGNORECASE)
+dotcell_atoms_start_RE = re.compile("^\s*%BLOCK\s+POSITIONS_(?:FRAC|ABS)", re.IGNORECASE)
+dotcell_atoms_end_RE = re.compile("^\s*%ENDBLOCK\s+POSITIONS_(?:FRAC|ABS)", re.IGNORECASE)
+def produce_dotcell(seedname, filename, defcell, atoms):
+	"""
+	produce_dotcell: reads <seedname>.cell (CASTEP cell file
+	and writes a new .cell file to <filename> replacing the 
+	lattice block with a new crystalographic lattice <defcell> 
+	(which should be supplied as a list of three lists, each with 
+	three elements). Also adds command to fix cell during optimization.
+	"""
+	in_lattice = False
+	in_atoms = False
+	have_atoms = (atoms != []) # If we have an empty list, no atoms were optimized so just leave them in the .cell file.
+	inputfile = open(seedname+".cell", "r")
+	outputfile = open(filename, "w")
+	for line in inputfile:
+		if (dotcell_lattice_end_RE.search(line) and in_lattice):
+			in_lattice = False
+		elif (dotcell_lattice_start_RE.search(line) and not in_lattice):
+			outputfile.write("%block LATTICE_CART\n")
+			outputfile.write(str(defcell[0][0]) + " " + str(defcell[0][1]) + " " + str(defcell[0][2]) + "\n")
+			outputfile.write(str(defcell[1][0]) + " " + str(defcell[1][1]) + " " + str(defcell[1][2]) + "\n")
+			outputfile.write(str(defcell[2][0]) + " " + str(defcell[2][1]) + " " + str(defcell[2][2]) + "\n")
+			outputfile.write("%endblock LATTICE_CART\n")
+			outputfile.write("FIX_ALL_CELL true\n")
+			in_lattice = True
+		elif (dotcell_atoms_end_RE.search(line) and in_atoms and have_atoms):
+			in_atoms = False
+		elif ((dotcell_atoms_start_RE.search(line)) and (not in_atoms) and have_atoms):
+			outputfile.write("%block POSITIONS_FRAC\n")
+			for atom in atoms:
+				outputfile.write("  " + atom[0] + "  " + str(atom[1]) + "  " + str(atom[2]) + "  " + str(atom[3]) + "\n")
+			outputfile.write("%endblock POSITIONS_FRAC\n")
+			in_atoms = True
+		elif(not (in_lattice or in_atoms)):
+			outputfile.write(line)
+	inputfile.close
+	outputfile.close
+	return()
+			
 def main(input_options, libmode=False):
 
 	# deal with options
-	def get_options():
-		if not libmode:
-			p = optparse.OptionParser()
-			p.add_option('--debug', '-d', action='store_true', \
-			              help="Debug mode (output to stdout rather than file)")
-			p.add_option('--num_steps', '-n', action='store', type='int', dest="numsteps")
-			p.add_option('--strain_mag', '-s', action='store', type='float', dest="strain")
-			p.add_option('--lattice_type', '-l', action='store', type='int', dest="lattice")
-			options,arguments = p.parse_args(args=input_options)
-
-		return options, arguments
-
-
-
-	# regular expression to match the whole of the final cell from a .castep file
-	dotcastep_latt_RE = re.compile("""\sBFGS:\sFinal\sConfiguration:\s*\n
-	            =+\s*\n\s*\n\s+\-+\s*\n\s+Unit\sCell\s*\n\s+\-+\s*\n
-		    \s+Real\sLattice\(A\)\s+Reciprocal\sLattice\(1/A\)\s*\n
-	            \s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s*\n
-	            \s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s*\n
-	            \s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s*\n""",
-	          re.VERBOSE)
-	# Start of the 'final configuration'
-	dotcastep_infinal_RE = re.compile("BFGS: Final Configuration:")
-	# Once inside final configuation, this should only match a line with atoms
-	dotcastep_atomline_RE = re.compile("x\s+(\w+)\s+\d+\s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s+x")
-	def parse_dotcastep(seedname):
-		dotCastep = open(seedname+".castep","r")
-		# Find the lattice
-		latticeblock = dotcastep_latt_RE.findall(dotCastep.read())[-1] # Get the last block - handle concat restarts
-		lattice = []
-		lattice.append([float(latticeblock[0]), float(latticeblock[1]), float(latticeblock[2])])
-		lattice.append([float(latticeblock[6]), float(latticeblock[7]), float(latticeblock[8])])
-		lattice.append([float(latticeblock[12]), float(latticeblock[13]), float(latticeblock[14])])
-		# rewind and search for and final atomic positions (these will be absent if e.g. they are all on symmetry positions)
-		dotCastep.seek(0)
-		in_atoms = False
-		atoms = []
-		for line in dotCastep:
-			if (in_atoms and dotcastep_atomline_RE.search(line)):
-				atom_line = dotcastep_atomline_RE.search(line)
-				atoms.append([atom_line.group(1), float(atom_line.group(2)), float(atom_line.group(3)), float(atom_line.group(4))])
-			elif ((not in_atoms) and (dotcastep_infinal_RE.search(line))):
-				in_atoms = True
-			
-                dotCastep.close()
-		print lattice
-		a, b, c, al, be, ga = cellCART2cellABC(lattice)
-		print a, b, c, al, be, ga
-		lattice = cellABC2cellCART(a, b, c, al, be, ga)
-		print lattice
-		
-		return (lattice, atoms)
-
-	def cellABC2cellCART (a, b, c, alp, bet, gam):
-		import numpy as S
-		# Get lattice vetors on cart frame from a, b, c and angles
-		# For monoclinic, b // Y and c // Z
-		if (alp == 90.0):
-      			cosa = 0.0;
-		else:
-      			cosa = S.cos(S.radians(alp))
-		if (bet == 90.0):
-     			cosb = 0.0
-		else:
-			cosb = S.cos(S.radians(bet))
-		if (gam == 90.0):
-			sing = 1.0
-			cosg = 0.0
-		else:
-			sing = S.sin(S.radians(gam))
-			cosg = S.cos(S.radians(gam))
-		rv21 = 0.0
-		rv31 = 0.0
-		rv32 = 0.0
-		rv11 = a
-		rv12 = b*cosg
-		rv22 = b*sing
-		rv13 = c*cosb
-		rv23 = c*(cosa - cosg*cosb)/sing
-		trm1 = rv23/c
-		rv33 = c*S.sqrt(1.0 - cosb**2 - trm1**2)
-		return [[rv11, rv12, rv13], [rv21, rv22, rv23], [rv31, rv32, rv33]]
-
-	def cellCART2cellABC (lattice):
-		import numpy as S
-		# Does not care about orentation...
-		a = S.sqrt(lattice[0][0]**2 + lattice[0][1]**2 + lattice[0][2]**2)
-		b = S.sqrt(lattice[1][0]**2 + lattice[1][1]**2 + lattice[1][2]**2)
-		c = S.sqrt(lattice[2][0]**2 + lattice[2][1]**2 + lattice[2][2]**2)
-		gam = S.arccos(S.dot(lattice[0],lattice[1]) / (a*b))
-		bet = S.arccos(S.dot(lattice[0],lattice[2]) / (a*c))
-		alp = S.arccos(S.dot(lattice[1],lattice[2]) / (b*c))
-		return a, b, c, S.degrees(alp), S.degrees(bet), S.degrees(gam)
-
-
-
-	# Regular expressions to match a lattice block in a castep .cell file. Note that these
-	# can be of the form %block lattice_abc or %block lattice_cart and are case insensitive
-	dotcell_lattice_start_RE = re.compile("^\s*%BLOCK\s+LATTICE_(?:CART|ABC)",re.IGNORECASE)
-	dotcell_lattice_end_RE = re.compile("^\s*%ENDBLOCK\s+LATTICE_(?:CART|ABC)",re.IGNORECASE)
-	dotcell_atoms_start_RE = re.compile("^\s*%BLOCK\s+POSITIONS_(?:FRAC|ABS)", re.IGNORECASE)
-	dotcell_atoms_end_RE = re.compile("^\s*%ENDBLOCK\s+POSITIONS_(?:FRAC|ABS)", re.IGNORECASE)
-	def produce_dotcell(seedname, filename, newlattice, atoms):
-		"""
-		produce_dotcell: reads <seedname>.cell (CASTEP cell file
-		and writes a new .cell file to <filename> replacing the 
-		lattice block with a new crystalographic lattice <newlattice> 
-		(which should be supplied as a list of three lists, each with 
-		three elements). Also adds command to fix cell during optimization.
-		"""
-		in_lattice = False
-		in_atoms = False
-		have_atoms = (atoms != []) # If we have an empty list, no atoms were optimized so just leave them in the .cell file.
-		inputfile = open(seedname+".cell", "r")
-		outputfile = open(filename, "w")
-		for line in inputfile:
-			if (dotcell_lattice_end_RE.search(line) and in_lattice):
-				in_lattice = False
-			elif (dotcell_lattice_start_RE.search(line) and not in_lattice):
-				outputfile.write("%block LATTICE_CART\n")
-				outputfile.write(str(defcell[0][0]) + " " + str(defcell[0][1]) + " " + str(defcell[0][2]) + "\n")
-				outputfile.write(str(defcell[1][0]) + " " + str(defcell[1][1]) + " " + str(defcell[1][2]) + "\n")
-				outputfile.write(str(defcell[2][0]) + " " + str(defcell[2][1]) + " " + str(defcell[2][2]) + "\n")
-				outputfile.write("%endblock LATTICE_CART\n")
-				outputfile.write("FIX_ALL_CELL true\n")
-				in_lattice = True
-			elif (dotcell_atoms_end_RE.search(line) and in_atoms and have_atoms):
-				in_atoms = False
-			elif ((dotcell_atoms_start_RE.search(line)) and (not in_atoms) and have_atoms):
-				outputfile.write("%block POSITIONS_FRAC\n")
-				for atom in atoms:
-					outputfile.write("  " + atom[0] + "  " + str(atom[1]) + "  " + str(atom[2]) + "  " + str(atom[3]) + "\n")
-				outputfile.write("%endblock POSITIONS_FRAC\n")
-				in_atoms = True
-			elif(not (in_lattice or in_atoms)):
-				outputfile.write(line)
-		inputfile.close
-		outputfile.close
-		return()
-			
-	options, arguments = get_options()
+	options, arguments = get_options(input_options, libmode)
 	seedname = arguments[0]
 	
 	(cell,atoms) = parse_dotcastep(seedname)
@@ -248,13 +264,13 @@ def main(input_options, libmode=False):
 				# Build the strain tensor (IRE convention but 1 -> 0 etc.)
 				this_strain = [1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
 				# diagonal elements - strain is displacment / lattice vector length
-				this_strain[0] = disps[0] / math.sqrt(cell[0][0]**2+cell[0][1]**2+cell[0][2]**2)
-				this_strain[1] = disps[1] / math.sqrt(cell[1][0]**2+cell[1][1]**2+cell[1][2]**2)
-				this_strain[2] = disps[2] / math.sqrt(cell[2][0]**2+cell[2][1]**2+cell[2][2]**2)
+				this_strain[0] = disps[0] / np.sqrt(cell[0][0]**2+cell[0][1]**2+cell[0][2]**2)
+				this_strain[1] = disps[1] / np.sqrt(cell[1][0]**2+cell[1][1]**2+cell[1][2]**2)
+				this_strain[2] = disps[2] / np.sqrt(cell[2][0]**2+cell[2][1]**2+cell[2][2]**2)
 				# off diagonals - we only strain upper right corner of cell matrix, so strain is 1/2*du/dx...
-				this_strain[3] = 0.5 * (disps[3] / math.sqrt(cell[0][0]**2+cell[0][1]**2+cell[0][2]**2))
-				this_strain[4] = 0.5 * (disps[4] / math.sqrt(cell[1][0]**2+cell[1][1]**2+cell[1][2]**2))
-				this_strain[5] = 0.5 * (disps[5] / math.sqrt(cell[2][0]**2+cell[2][1]**2+cell[2][2]**2))
+				this_strain[3] = 0.5 * (disps[3] / np.sqrt(cell[0][0]**2+cell[0][1]**2+cell[0][2]**2))
+				this_strain[4] = 0.5 * (disps[4] / np.sqrt(cell[1][0]**2+cell[1][1]**2+cell[1][2]**2))
+				this_strain[5] = 0.5 * (disps[5] / np.sqrt(cell[2][0]**2+cell[2][1]**2+cell[2][2]**2))
 
 				# Deform cell - only apply deformation to upper right corner
 				defcell = [[cell[0][0]+disps[0], cell[0][1]+disps[5], cell[0][2]+disps[4]],
