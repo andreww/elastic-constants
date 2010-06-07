@@ -119,8 +119,56 @@ def main(input_options, libmode=False):
 				in_atoms = True
 			
                 dotCastep.close()
+		print lattice
+		a, b, c, al, be, ga = cellCART2cellABC(lattice)
+		print a, b, c, al, be, ga
+		lattice = cellABC2cellCART(a, b, c, al, be, ga)
+		print lattice
 		
 		return (lattice, atoms)
+
+	def cellABC2cellCART (a, b, c, alp, bet, gam):
+		import numpy as S
+		# Get lattice vetors on cart frame from a, b, c and angles
+		# For monoclinic, b // Y and c // Z
+		if (alp == 90.0):
+      			cosa = 0.0;
+		else:
+      			cosa = S.cos(S.radians(alp))
+		if (bet == 90.0):
+     			cosb = 0.0
+		else:
+			cosb = S.cos(S.radians(bet))
+		if (gam == 90.0):
+			sing = 1.0
+			cosg = 0.0
+		else:
+			sing = S.sin(S.radians(gam))
+			cosg = S.cos(S.radians(gam))
+		rv21 = 0.0
+		rv31 = 0.0
+		rv32 = 0.0
+		rv11 = a
+		rv12 = b*cosg
+		rv22 = b*sing
+		rv13 = c*cosb
+		rv23 = c*(cosa - cosg*cosb)/sing
+		trm1 = rv23/c
+		rv33 = c*S.sqrt(1.0 - cosb**2 - trm1**2)
+		return [[rv11, rv12, rv13], [rv21, rv22, rv23], [rv31, rv32, rv33]]
+
+	def cellCART2cellABC (lattice):
+		import numpy as S
+		# Does not care about orentation...
+		a = S.sqrt(lattice[0][0]**2 + lattice[0][1]**2 + lattice[0][2]**2)
+		b = S.sqrt(lattice[1][0]**2 + lattice[1][1]**2 + lattice[1][2]**2)
+		c = S.sqrt(lattice[2][0]**2 + lattice[2][1]**2 + lattice[2][2]**2)
+		gam = S.arccos(S.dot(lattice[0],lattice[1]) / (a*b))
+		bet = S.arccos(S.dot(lattice[0],lattice[2]) / (a*c))
+		alp = S.arccos(S.dot(lattice[1],lattice[2]) / (b*c))
+		return a, b, c, S.degrees(alp), S.degrees(bet), S.degrees(gam)
+
+
 
 	# Regular expressions to match a lattice block in a castep .cell file. Note that these
 	# can be of the form %block lattice_abc or %block lattice_cart and are case insensitive
@@ -164,6 +212,7 @@ def main(input_options, libmode=False):
 				outputfile.write(line)
 		inputfile.close
 		outputfile.close
+		return()
 			
 	options, arguments = get_options()
 	seedname = arguments[0]
