@@ -13,6 +13,7 @@ import os
 import re
 import optparse
 import scipy as S
+import CijUtil
 
 version = 1
 	
@@ -982,24 +983,11 @@ def main(input_options, libmode=False):
 	
 	
 	print "\n<>--------------------- POLYCRYSTALLINE RESULTS -------------------------<>\n"		
-
-
-	# These equations might be valid only for orthorhombic systems - check!
-	
-	voigtB = (1.0/9)*(finalCijMatrix[0,0] + finalCijMatrix[1,1] + finalCijMatrix[2,2] ) \
-		+ (2.0/9)*(finalCijMatrix[0,1] + finalCijMatrix[0,2] + finalCijMatrix[1,2])
-	
-	reussB = 1.0/((sij[0,0]+sij[1,1]+sij[2,2]) + 2*(sij[0,1]+sij[0,2]+sij[1,2]))
-	
-	voigtG = (1.0/15)*(finalCijMatrix[0,0] + finalCijMatrix[1,1] + finalCijMatrix[2,2] - finalCijMatrix[0,1] - finalCijMatrix[0,2] - finalCijMatrix[1,2]) \
-		+ (1.0/5)*(finalCijMatrix[3,3] + finalCijMatrix[4,4] + finalCijMatrix[5,5])
-	
-	reussG = 15.0/(4*(sij[0,0]+sij[1,1]+sij[2,2]) - 4*(sij[0,1]+sij[0,2]+sij[1,2]) + 3*(sij[3,3]+sij[4,4]+sij[5,5]))
-	
+	(voigtB, reussB, voigtG, reussG, hillB, hillG) = CijUtil.polyCij(finalCijMatrix)
 	format = "%16s : %11.5f %11.5f %11.5f %6s"
 	print "                      Voigt       Reuss       Hill"
-	print format % ("Bulk Modulus", voigtB, reussB, (voigtB+reussB)/2, units)
-	print format % ("Shear Modulus", voigtG, reussG, (voigtG+reussG)/2, units)
+	print format % ("Bulk Modulus", voigtB, reussB, hillB, units)
+	print format % ("Shear Modulus", voigtG, reussG, hillG, units)
 	
 	print "\n<>-----------------------------------------------------------------------<>\n"		
 	
