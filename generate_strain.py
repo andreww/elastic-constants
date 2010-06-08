@@ -16,6 +16,44 @@ import optparse
 import re
 import numpy as np
 
+def PointGroup2StrainPat(pointgroup):
+	"""
+	Converts point group number (as ordered by CASTEP
+	and in the International Tables) to a number representing 
+	the needed strain pattern.
+	"""
+	if (pointgroup < 1):
+		print "Point group number " + str(pointgroup) + " not recognized.\n"
+		sys.exit(1)
+	elif (pointgroup <= 2): 
+		# Triclinic
+		patt = 1
+	elif (pointgroup <= 5):
+		# Monoclinic
+		patt = 2
+	elif (pointgroup <= 8):
+		# Orthorhombic
+		patt = 3
+	elif (pointgroup <= 15):
+		# Tetragonal
+		patt = 4
+	elif (pointgroup <= 17):
+		# Trigonal-Low
+		patt = 6
+	elif (pointgroup <= 20):
+		# Trigonal-High
+		patt = 7
+	elif (pointgroup <= 27):
+		# Hexagonal
+		patt = 7
+	elif (pointgroup <= 32):
+		# Cubic
+		patt = 5
+	else:
+		print "Point group number " + str(pointgroup) + " not recognized.\n"
+		sys.exit(1)
+	return patt
+
 def GetStrainPatterns(code):
 	"""
 	Given a code number for the crystal symmetry, 
@@ -97,6 +135,7 @@ dotcastep_latt_RE = re.compile("""\sBFGS:\sFinal\sConfiguration:\s*\n
 dotcastep_infinal_RE = re.compile("BFGS: Final Configuration:")
 # Once inside final configuation, this should only match a line with atoms
 dotcastep_atomline_RE = re.compile("x\s+(\w+)\s+\d+\s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s+x")
+dotcastep_poinggroup_RE = re.compile("^\s+Point group of crystal =\s+([\+\-]?\d+):")
 
 def parse_dotcastep(seedname):
 	"""
@@ -113,14 +152,18 @@ def parse_dotcastep(seedname):
 	# rewind and search for and final atomic positions (these will be absent if e.g. they are all on symmetry positions)
 	dotCastep.seek(0)
 	in_atoms = False
+	pointgroup = None
 	atoms = []
 	for line in dotCastep:
-		if (in_atoms and dotcastep_atomline_RE.search(line)):
-			atom_line = dotcastep_atomline_RE.search(line)
+		sym_line = dotcastep_poinggroup_RE.search(line)
+		atom_line = dotcastep_atomline_RE.search(line)
+		if (in_atoms and atom_line):
 			atoms.append([atom_line.group(1), float(atom_line.group(2)), \
 			              float(atom_line.group(3)), float(atom_line.group(4))])
 		elif ((not in_atoms) and (dotcastep_infinal_RE.search(line))):
 			in_atoms = True
+		elif (sym_line):
+			pointgroup = int(sym_line.group(1))
 		
 	dotCastep.close()
 	print lattice
@@ -129,7 +172,7 @@ def parse_dotcastep(seedname):
 	lattice = cellABC2cellCART(a, b, c, al, be, ga)
 	print lattice
 	
-	return (lattice, atoms)
+	return (lattice, pointgroup, atoms)
 
 def cellABC2cellCART (a, b, c, alp, bet, gam):
 	"""
@@ -233,7 +276,7 @@ def main(input_options, libmode=False):
 	options, arguments = get_options(input_options, libmode)
 	seedname = arguments[0]
 	
-	(cell,atoms) = parse_dotcastep(seedname)
+	(cell,pointgroup,atoms) = parse_dotcastep(seedname)
 
 	cijdat = open(seedname+".cijdat","w")
 	print "\nWriting strain data to ", seedname+".cijdat\n"
@@ -243,7 +286,28 @@ def main(input_options, libmode=False):
 	                4:"Tetragonal", 5:"Cubic", 6:"Trigonal-low", 7:"Trigonal-high/Hexagonal"}
 	maxstrain = options.strain
 	numsteps = options.numsteps
-	latticeCode = options.lattice
+	# Which strain pattern to use?
+	if (options.lattice == None):
+		if (pointgroup == None):
+			# Nothing from user and nothing from 
+			# .castep: we are in trouble
+			print "No point group found in .castep file so the strain pattern cannot be determined\n"
+			print "A strain pattern can also be provided using the -l flag\n"
+			sys.exit(1)
+		else:
+			# Use the value from .castep
+			latticeCode = PointGroup2StrainPat(pointgroup)
+	else:
+		if (pointgroup == None):
+			# Noting in .castep - use users choice
+			latticeCode = options.lattice
+		else:
+			# Use users choice, but check and warn
+			latticeCode = options.lattice
+			if (latticeCode != PointGroup2StrainPat(pointgroup)):
+				print "WARNING: User supplied lattice code is inconsistant with the point group\n"
+				print "         found by CASTEP. Using user supplied lattice code.\n"
+		
 	patterns = GetStrainPatterns(latticeCode)
 	numStrainPatterns = len(patterns)
 	print "\nLattice type is ", latticeTypes[latticeCode] +"\n"
