@@ -16,6 +16,8 @@ import optparse
 import re
 import numpy as np
 
+version = 0.1
+
 def PointGroup2StrainPat(pointgroup):
 	"""
 	Converts point group number (as ordered by CASTEP
@@ -113,12 +115,16 @@ def get_options(input_options, libmode):
 	Just extracts the command line arguments into an options object
 	"""
 	if not libmode:
-		p = optparse.OptionParser()
+		p = optparse.OptionParser(usage="%prog [options] seedname\nGenerate CASTEP input for elastic constants calculation", \
+		    version="%prog "+str(version))
 		p.add_option('--debug', '-d', action='store_true', \
 		              help="Debug mode (output to stdout rather than file)")
-		p.add_option('--num_steps', '-n', action='store', type='int', dest="numsteps")
-		p.add_option('--strain_mag', '-s', action='store', type='float', dest="strain")
-		p.add_option('--lattice_type', '-l', action='store', type='int', dest="lattice")
+		p.add_option('--steps', '-n', action='store', type='int', dest="numsteps", \
+	   	              help='Number of positive strain magnitudes to impose (defaults to 3)')
+		p.add_option('--strain', '-s', action='store', type='float', dest="strain", \
+		              help='Maximum magnitude of deformation to produced strained cells (defaults to 0.01)')
+		p.add_option('--lattice', action='store', type='int', dest="lattice", \
+		              help='Lattice type to set pattern of deformation (extracted from .castep file)')
 		options,arguments = p.parse_args(args=input_options)
 
 	return options, arguments
@@ -285,7 +291,11 @@ def main(input_options, libmode=False):
 	latticeTypes = {0:"Unknown", 1:"Triclinic", 2:"Monoclinic", 3:"Orthorhombic", \
 	                4:"Tetragonal", 5:"Cubic", 6:"Trigonal-low", 7:"Trigonal-high/Hexagonal"}
 	maxstrain = options.strain
+	if (maxstrain == None):
+		maxstrain = 0.01
 	numsteps = options.numsteps
+	if (numsteps == None):
+		numsteps = 3 
 	# Which strain pattern to use?
 	if (options.lattice == None):
 		if (pointgroup == None):
