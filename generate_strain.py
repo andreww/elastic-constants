@@ -131,7 +131,7 @@ def get_options(input_options, libmode):
 	return options, arguments
 
 
-def cellABC2cellCART (a, b, c, alp, bet, gam):
+def cellABC2cellCART (a, b, c, alp, bet, gam, Convention=1):
 	"""
 	Given three lattice vector lengths and angles, returns
 	three vectors (as list of lists:
@@ -145,8 +145,10 @@ def cellABC2cellCART (a, b, c, alp, bet, gam):
 	else:
       		cosa = np.cos(np.radians(alp))
 	if (bet == 90.0):
+		sinb = 1.0
      		cosb = 0.0
 	else:
+		sinb = np.sin(np.radians(bet))
 		cosb = np.cos(np.radians(bet))
 	if (gam == 90.0):
 		sing = 1.0
@@ -154,17 +156,18 @@ def cellABC2cellCART (a, b, c, alp, bet, gam):
 	else:
 		sing = np.sin(np.radians(gam))
 		cosg = np.cos(np.radians(gam))
-	rv21 = 0.0
-	rv31 = 0.0
-	rv32 = 0.0
-	rv11 = a
-	rv12 = b*cosg
-	rv22 = b*sing
-	rv13 = c*cosb
-	rv23 = c*(cosa - cosg*cosb)/sing
-	trm1 = rv23/c
-	rv33 = c*np.sqrt(1.0 - cosb**2 - trm1**2)
-	return [[rv11, rv12, rv13], [rv21, rv22, rv23], [rv31, rv32, rv33]]
+	a_x = a
+	a_y = 0.0
+	a_z = 0.0
+	b_z = 0.0
+	b_x = b*cosg
+	b_y = b*sing
+	c_x = c*cosb
+	c_y = c*(cosa - cosg*cosb)/sing
+	trm1 = c_y/c
+	c_z = c*np.sqrt(1.0 - cosb**2 - trm1**2)
+
+	return [[a_x, a_y, a_z], [b_x, b_y, b_z], [c_x, c_y, c_z]]
 
 def cellCART2cellABC (lattice):
 	"""
@@ -194,8 +197,6 @@ def main(input_options, libmode=False):
 	a, b, c, al, be, ga = cellCART2cellABC(cell)
 	cell = cellABC2cellCART(a, b, c, al, be, ga)
 
-	cijdat = open(seedname+".cijdat","w")
-	print "\nWriting strain data to ", seedname+".cijdat\n"
 
 	# Not sure why the lattice types are enumerated like this, but this is how .cijdat does it...
 	latticeTypes = {0:"Unknown", 1:"Triclinic", 2:"Monoclinic", 3:"Orthorhombic", \
@@ -228,10 +229,19 @@ def main(input_options, libmode=False):
 				print "WARNING: User supplied lattice code is inconsistant with the point group\n"
 				print "         found by CASTEP. Using user supplied lattice code.\n"
 		
+	print "Cell parameters: a = %f gamma = %f" % (a, al)
+	print "                 b = %f beta  = %f" % (b, be)
+	print "                 c = %f gamma = %f \n" % (c, ga)
+	print "Lattce vectors:  %7f %7f %7f " % (cell[0][0], cell[0][1], cell[0][2])
+	print "                 %7f %7f %7f " % (cell[1][0], cell[1][1], cell[1][2])
+	print "                 %7f %7f %7f \n " % (cell[2][0], cell[2][1], cell[2][2])
 	patterns = GetStrainPatterns(latticeCode)
 	numStrainPatterns = len(patterns)
-	print "\nLattice type is ", latticeTypes[latticeCode] +"\n"
+	print "Lattice type is ", latticeTypes[latticeCode] 
 	print "Number of patterns: "+ str(numStrainPatterns) +"\n"
+
+	cijdat = open(seedname+".cijdat","w")
+	print "Writing strain data to ", seedname+".cijdat"
 	cijdat.write(str(latticeCode) + ' ' + str(numsteps*2) + ' 0 ' + '0 \n')
   	cijdat.write(str(maxstrain)+"\n")
 
@@ -263,7 +273,7 @@ def main(input_options, libmode=False):
 
 				pattern_name = seedname + "_cij__" + str(patt+1) + "__" + str((a*2)+1+neg)
 
-				print "\nPattern Name = ", pattern_name
+				print "Pattern Name = ", pattern_name
 				print "Pattern = ", this_pat
 				print "Magnitude = ", this_mag
 				cijdat.write(pattern_name+"\n")
