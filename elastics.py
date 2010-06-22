@@ -19,324 +19,6 @@ version = 1
 	
 def main(input_options, libmode=False):
 	
-	def dumpXML(seedname):
-		
-		import time
-		
-		
-		S.set_printoptions(threshold=S.nan)  #don't skip printing parts of the array
-		
-		if os.path.isfile(seedname+"-geomopt1.cml"):
-			# we'll inject the data into this file, then
-			basefile = seedname+"-geomopt1.cml"
-    		
-			print "Inserting CML into: "+ basefile
-			f = open(basefile, "r")
-			tree = etree.parse(f)
-			f.close()
-			
-			fp = d["{http://www.castep.org/cml/dictionary/}finalProperties"]
-			finalproperties = fp.findin_context(tree)
-			assert len(finalproperties) == 1
-		    
-			startnode = finalproperties[0]
-		elif os.path.isfile(seedname+"-energy.cml"):
-			# we'll inject the data into this file, then
-			basefile = seedname+"-energy.cml"
-
-			print "Inserting CML into: "+ basefile
-			f = open(basefile, "r")
-			tree = etree.parse(f)
-			f.close()
-
-			fp = d["{http://www.castep.org/cml/dictionary/}finalProperties"]
-			finalproperties = fp.findin_context(tree)
-			assert len(finalproperties) == 1
-
-			startnode = finalproperties[0]
-		else:
-			
-			
-			basefile = seedname+"_cij_analysis.cml"	
-			
-			print "Outputting CML into: "+ basefile
-			
-			# create a header
-			CML_NAMESPACE = "http://www.xml-cml.org/schema"
-			DC_NAMESPACE ="http://purl.org/dc/elements/1.1/"		
-			CML = "{%s}" % CML_NAMESPACE
-			NSMAP = {None : CML_NAMESPACE, "dc" : DC_NAMESPACE}
-				
-			startnode = etree.Element(CML +"cml", nsmap=NSMAP)
-		
-			metadata = etree.Element("metadata")
-			metadata.attrib["name"] = "dc:date"
-			metadata.attrib["content"] = time.strftime("%Y-%m-%dT%H:%M:%S")
-			startnode.append(metadata)
-		
-			metadata = etree.Element("metadata")
-			metadata.attrib["name"] = "dc:creator"
-			metadata.attrib["content"] = "MGElastics"
-			startnode.append(metadata)
-		
-			metadata = etree.Element("metadata")
-			metadata.attrib["name"] = "dc:hasVersion"
-			metadata.attrib["content"] = str(version)
-			startnode.append(metadata)
-		
-			metadata = etree.Element("metadata")
-			metadata.attrib["name"] = "dc:subject"
-			metadata.attrib["content"] = "Analysis file for Cij calculations"
-			startnode.append(metadata)
-			
-			tree = etree.ElementTree(startnode)
-			
-			
-		# now append Cij data
-		cijnode = etree.Element("propertyList")
-		cijnode.attrib["title"] = "MaterialsGrid: Elastic Properties"
-		cijnode.attrib["dictRef"] = "castep:elastic_properties"  
-		startnode.append(cijnode) 
-		
-		cijProp = etree.Element("property")
-		cijProp.attrib["dictRef"] = "castep:elastic_stiffness_constants"
-		cijProp.attrib["title"] = "Elastic Stiffness Constants"
-		cijnode.append(cijProp)
-		
-		cijTensor = etree.Element("matrix")
-		cijTensor.attrib["rows"] = "6"
-		cijTensor.attrib["columns"] = "6"
-		cijTensor.attrib["dataType"] = "xsd:double"
-		cijTensor.attrib["units"] = "castepunits:"+ units.lower()
-		cijTensor.text = S.array2string(finalCijMatrix.reshape(1,36)[0],max_line_width=1000,suppress_small=True).strip("[] ") 
-		cijProp.append(cijTensor)
-		
-		sijProp = etree.Element("property")
-		sijProp.attrib["dictRef"] = "castep:elastic_compliance_constants"
-		sijProp.attrib["title"] = "Elastic Compliance Constants"
-		cijnode.append(sijProp)
-		
-		sijTensor = etree.Element("matrix")
-		sijTensor.attrib["rows"] = "6"
-		sijTensor.attrib["columns"] = "6"
-		sijTensor.attrib["dataType"] = "xsd:double"
-		sijTensor.attrib["units"] = "castepunits:"+ units.lower()+"-1"  #this has to be changed - i don't think the '/' is allowed
-		sijTensor.text = S.array2string(sij.reshape(1,36)[0],max_line_width=1000,suppress_small=True).strip("[] ") 
-		sijProp.append(sijTensor)
-		
-		#### Young's Moduli ####
-		youngsMod = etree.Element("propertyList")
-		youngsMod.attrib["dictRef"] = "castep:youngs_moduli"
-		youngsMod.attrib["title"] = "Young's Moduli"
-		cijnode.append(youngsMod)
-		
-		# X
-		youngsModValX = etree.Element("property")
-		youngsModValX.attrib["title"] = "Young's Modulus X"
-		youngsModValX.attrib["dictRef"] = "castep:young_x"
-		youngsMod.append(youngsModValX)
-		
-		youngsModValXScalar = etree.Element("scalar")
-		youngsModValXScalar.attrib["dataType"] = "xsd:double"
-		youngsModValXScalar.attrib["units"] = "castepunits:"+ units.lower()
-		youngsModValXScalar.text = str(youngX)
-		youngsModValX.append(youngsModValXScalar)
-		
-		# Y
-		youngsModValY = etree.Element("property")
-		youngsModValY.attrib["title"] = "Young's Modulus Y"
-		youngsModValY.attrib["dictRef"] = "castep:young_y"
-		youngsMod.append(youngsModValY)
-		
-		youngsModValYScalar = etree.Element("scalar")
-		youngsModValYScalar.attrib["dataType"] = "xsd:double"
-		youngsModValYScalar.attrib["units"] = "castepunits:"+ units.lower()
-		youngsModValYScalar.text = str(youngY)
-		youngsModValY.append(youngsModValYScalar)
-		
-		# Z
-		youngsModValZ = etree.Element("property")
-		youngsModValZ.attrib["title"] = "Young's Modulus Z"
-		youngsModValZ.attrib["dictRef"] = "castep:young_z"
-		youngsMod.append(youngsModValZ)
-		
-		youngsModValZScalar = etree.Element("scalar")
-		youngsModValZScalar.attrib["dataType"] = "xsd:double"
-		youngsModValZScalar.attrib["units"] = "castepunits:"+ units.lower()
-		youngsModValZScalar.text = str(youngZ)
-		youngsModValZ.append(youngsModValZScalar)
-		
-		
-		
-		#### Poisson's Ratio ####
-		poissonMod = etree.Element("propertyList")
-		poissonMod.attrib["dictRef"] = "castep:poisson_ratio"
-		poissonMod.attrib["title"] = "Poisson Ratio"
-		cijnode.append(poissonMod)
-		
-		# XY
-		poissonModValXY = etree.Element("property")
-		poissonModValXY.attrib["title"] = "Poisson Ratio XY"
-		poissonModValXY.attrib["dictRef"] = "castep:poisson_xy"
-		poissonModValXY.attrib["units"] = "castepunits:dimensionless"
-		
-		poissonMod.append(poissonModValXY)
-		
-		poissonModValXYScalar = etree.Element("scalar")
-		poissonModValXYScalar.attrib["dataType"] = "xsd:double"
-		poissonModValXYScalar.attrib["units"] = "castepunits:dimensionless"
-		poissonModValXYScalar.text = str(poissonXY)
-		poissonModValXY.append(poissonModValXYScalar)
-		
-		# XZ
-		poissonModValXZ = etree.Element("property")
-		poissonModValXZ.attrib["title"] = "Poisson Ratio XZ"
-		poissonModValXZ.attrib["dictRef"] = "castep:poisson_xz"
-		poissonMod.append(poissonModValXZ)
-		
-		poissonModValXZScalar = etree.Element("scalar")
-		poissonModValXZScalar.attrib["dataType"] = "xsd:double"
-		poissonModValXZScalar.attrib["units"] = "castepunits:dimensionless"
-		poissonModValXZScalar.text = str(poissonXZ)
-		poissonModValXZ.append(poissonModValXZScalar)
-		
-		# YX
-		poissonModValYX = etree.Element("property")
-		poissonModValYX.attrib["title"] = "Poisson Ratio YX"
-		poissonModValYX.attrib["dictRef"] = "castep:poisson_yx"
-		poissonMod.append(poissonModValYX)
-		
-		poissonModValYXScalar = etree.Element("scalar")
-		poissonModValYXScalar.attrib["dataType"] = "xsd:double"
-		poissonModValYXScalar.attrib["units"] = "castepunits:dimensionless"
-		poissonModValYXScalar.text = str(poissonYX)
-		poissonModValYX.append(poissonModValYXScalar)
-		
-		# YZ
-		poissonModValYZ = etree.Element("property")
-		poissonModValYZ.attrib["title"] = "Poisson Ratio YZ"
-		poissonModValYZ.attrib["dictRef"] = "castep:poisson_yz"
-		poissonMod.append(poissonModValYZ)
-		
-		poissonModValYZScalar = etree.Element("scalar")
-		poissonModValYZScalar.attrib["dataType"] = "xsd:double"
-		poissonModValYZScalar.attrib["units"] = "castepunits:dimensionless"
-		poissonModValYZScalar.text = str(poissonYZ)
-		poissonModValYZ.append(poissonModValYZScalar)
-		
-		# ZX
-		poissonModValZX = etree.Element("property")
-		poissonModValZX.attrib["title"] = "Poisson Ratio ZX"
-		poissonModValZX.attrib["dictRef"] = "castep:poisson_zx"
-		poissonMod.append(poissonModValZX)
-		
-		poissonModValZXScalar = etree.Element("scalar")
-		poissonModValZXScalar.attrib["dataType"] = "xsd:double"
-		poissonModValZXScalar.attrib["units"] = "castepunits:dimensionless"
-		poissonModValZXScalar.text = str(poissonZX)
-		poissonModValZX.append(poissonModValZXScalar)
-		
-		# ZY
-		poissonModValZY = etree.Element("property")
-		poissonModValZY.attrib["title"] = "Poisson Ratio ZY"
-		poissonModValZY.attrib["dictRef"] = "castep:poisson_zy"
-		poissonMod.append(poissonModValZY)
-		
-		poissonModValZYScalar = etree.Element("scalar")
-		poissonModValZYScalar.attrib["dataType"] = "xsd:double"
-		poissonModValZYScalar.attrib["units"] = "castepunits:dimensionless"
-		poissonModValZYScalar.text = str(poissonZY)
-		poissonModValZY.append(poissonModValZYScalar)	
-		
-		
-		#### Polycrystalline Results ####
-		
-		#bulk moduli
-		bulkModPL = etree.Element("propertyList")
-		bulkModPL.attrib["dictRef"] = "castep:polycrystalline_bulk_moduli"
-		bulkModPL.attrib["title"] = "Polycrystalline Bulk Moduli"
-		cijnode.append(bulkModPL)
-		
-		bulkModVoigt = etree.Element("property")
-		bulkModVoigt.attrib["title"] = "Voigt"
-		bulkModVoigt.attrib["dictRef"] = "castep:bulk_modulus_voigt"
-		bulkModPL.append(bulkModVoigt)
-		
-		bulkModReuss = etree.Element("property")
-		bulkModReuss.attrib["title"] = "Reuss"
-		bulkModReuss.attrib["dictRef"] = "castep:bulk_modulus_reuss"
-		bulkModPL.append(bulkModReuss)
-		
-		bulkModHill = etree.Element("property")
-		bulkModHill.attrib["title"] = "Hill"
-		bulkModHill.attrib["dictRef"] = "castep:bulk_modulus_hill"
-		bulkModPL.append(bulkModHill)
-		
-		bulkModVoigtScalar = etree.Element("scalar")
-		bulkModVoigtScalar.attrib["dataType"] = "xsd:double"
-		bulkModVoigtScalar.attrib["units"] = "castepunits:"+ units.lower()
-		bulkModVoigtScalar.text = str(voigtB)
-		bulkModVoigt.append(bulkModVoigtScalar)
-		
-		bulkModReussScalar = etree.Element("scalar")
-		bulkModReussScalar.attrib["dataType"] = "xsd:double"
-		bulkModReussScalar.attrib["units"] = "castepunits:"+ units.lower()
-		bulkModReussScalar.text = str(reussB)
-		bulkModReuss.append(bulkModReussScalar)
-		
-		bulkModHillScalar = etree.Element("scalar")
-		bulkModHillScalar.attrib["dataType"] = "xsd:double"
-		bulkModHillScalar.attrib["units"] = "castepunits:"+ units.lower()
-		bulkModHillScalar.text = str((voigtB+reussB)/2)
-		bulkModHill.append(bulkModHillScalar)
-		
-		
-		#shear moduli
-		shearModPL = etree.Element("propertyList")
-		shearModPL.attrib["dictRef"] = "castep:polycrystalline_shear_moduli"
-		shearModPL.attrib["title"] = "Polycrystalline Shear Moduli"
-		cijnode.append(shearModPL)
-		
-		shearModVoigt = etree.Element("property")
-		shearModVoigt.attrib["title"] = "Voigt"
-		shearModVoigt.attrib["dictRef"] = "castep:shear_modulus_voigt"
-		shearModPL.append(shearModVoigt)
-		
-		shearModReuss = etree.Element("property")
-		shearModReuss.attrib["title"] = "Reuss"
-		shearModReuss.attrib["dictRef"] = "castep:shear_modulus_reuss"
-		shearModPL.append(shearModReuss)
-		
-		shearModHill = etree.Element("property")
-		shearModHill.attrib["title"] = "Hill"
-		shearModHill.attrib["dictRef"] = "castep:shear_modulus_hill"
-		shearModPL.append(shearModHill)
-		
-		shearModVoigtScalar = etree.Element("scalar")
-		shearModVoigtScalar.attrib["dataType"] = "xsd:double"
-		shearModVoigtScalar.attrib["units"] = "castepunits:"+ units.lower()
-		shearModVoigtScalar.text = str(voigtG)
-		shearModVoigt.append(shearModVoigtScalar)
-		
-		shearModReussScalar = etree.Element("scalar")
-		shearModReussScalar.attrib["dataType"] = "xsd:double"
-		shearModReussScalar.attrib["units"] = "castepunits:"+ units.lower()
-		shearModReussScalar.text = str(reussG)
-		shearModReuss.append(shearModReussScalar)
-		
-		shearModHillScalar = etree.Element("scalar")
-		shearModHillScalar.attrib["dataType"] = "xsd:double"
-		shearModHillScalar.attrib["units"] = "castepunits:"+ units.lower()
-		shearModHillScalar.text = str((voigtG+reussG)/2)
-		shearModHill.append(shearModHillScalar)
-		
-		if(options.debug):
-			print etree.tostring(startnode,pretty_print=True)
-		else:
-			# wrap it in an ElementTree instance, and save as XML
-			tree.write(basefile,pretty_print=True)
-			
-		return
 		
 	def analysePatterns(strain):
 
@@ -355,20 +37,6 @@ def main(input_options, libmode=False):
 		return strainsUsed
 	
 
-	def getCMLStress(file):
-
-		def __castep(dict, term):
-			return dict["{http://www.castep.org/cml/dictionary/}%s" % term]
-		
-            
-		stress = __castep(d, "stress")
-
-		tree = etree.parse(file)
-		stress_xml = stress.findin(tree)
-		assert len(stress_xml) == 1
-		stressTensor = stress.getvalue(stress_xml[0])
-		return stressTensor, stressTensor.unit
-	
 
 	def cMatrix(symmetryType,TetrHigh):
 		if symmetryType == "Cubic" :
@@ -442,8 +110,6 @@ def main(input_options, libmode=False):
 		# deal with options
 		if not libmode:
 			p = optparse.OptionParser()
-			p.add_option('--xml', '-x', action='store_true',  help="CML mode")
-			p.add_option('--castep', '-c', action='store_true', help="CASTEP mode")
 			p.add_option('--force-cml-output','-f', action='store_true', help="Force CML output",dest="force")
 			p.add_option('--graphics', '-g', action='store_true', help="Show graphics (requires matplotlib)")
 			p.add_option('--debug', '-d', action='store_true', help="Debug mode (output to stdout rather than file)")
@@ -462,31 +128,6 @@ def main(input_options, libmode=False):
 			arguments = taskRe.findall(input_options[1][0])
 			global outfile
 			outfile = input_options[0]
-		
-		if options.castep and options.xml:
-			p.error("options -x and -c are mutually exclusive")
-		elif not options.castep and not options.xml:
-			p.error("one of -x or -c is required")
-		
-		
-		# For some reason, golem/lxml needs to be imported first    
-		if options.xml or options.force:
-			try:
-				# import golem, for use globally
-				global golem
-				import golem
-				
-				# import etree, for use globally
-				global etree
-				from lxml import etree
-				
-				# set dictionary, for use globally
-				global d
-				d = golem.loadDictionary("castepDict.xml")
-				
-			except ImportError:
-				print >> sys.stderr, "You need to have golem and lxml installed for the --xml option"
-				sys.exit(1)
 				
 		if options.graphics:
 			try:
@@ -496,14 +137,6 @@ def main(input_options, libmode=False):
 				print >> sys.stderr, "You need to have matplotlib installed for the --graphics option"
 				sys.exit(1)
 				
-		if(options.castep):
-			print "Reading stress data from the .castep files"
-		elif(options.xml):
-			print "Reading stress data from the .xml files"
-		else:
-			print "Don't know where to get the stress data, please use flags --castep or --xml"
-			sys.exit(1)
-		
 		return options, arguments
 	
 	options, arguments = get_options()
@@ -582,30 +215,19 @@ def main(input_options, libmode=False):
 			else:
 				strain = S.row_stack((strain,S.array([float(line1[0]),float(line2[1]),float(line3[2]),2*float(line2[2]),2*float(line1[2]),2*float(line1[1])])))
 		
-			if(options.castep):
-				# now get corresponding stress data from .castep
-				dotCastep = open(seedname+"_cij__"+str(patt+1)+"__"+str(a+1)+".castep","r")	
-				stressData = stressRE.findall(dotCastep.read())[0]
-				dotCastep.close()
-			
-				units = stressData[0]
+			# now get corresponding stress data from .castep
+			dotCastep = open(seedname+"_cij__"+str(patt+1)+"__"+str(a+1)+".castep","r")	
+			stressData = stressRE.findall(dotCastep.read())[0]
+			dotCastep.close()
 		
-				# again, top right triangle
-				if a == 0:
-					stress = S.array([float(stressData[1]),float(stressData[4]),float(stressData[6]),float(stressData[5]),float(stressData[3]),float(stressData[2])])
-				else:
-					stress = S.row_stack((stress,S.array([float(stressData[1]),float(stressData[4]),float(stressData[6]),float(stressData[5]),float(stressData[3]),float(stressData[2])])))		
+			units = stressData[0]
+	
+			# again, top right triangle
+			if a == 0:
+				stress = S.array([float(stressData[1]),float(stressData[4]),float(stressData[6]),float(stressData[5]),float(stressData[3]),float(stressData[2])])
+			else:
+				stress = S.row_stack((stress,S.array([float(stressData[1]),float(stressData[4]),float(stressData[6]),float(stressData[5]),float(stressData[3]),float(stressData[2])])))		
 			
-			elif(options.xml):
-				# now get corresponding stress data from .xml (using Golem)
-				dotXMLfilename = seedname+"_cij__"+str(patt+1)+"__"+str(a+1)+"-geomopt1.cml"
-				cmlStressData, units = getCMLStress(dotXMLfilename)
-			
-				if a == 0:
-					stress = S.array([float(cmlStressData[0][0]),float(cmlStressData[1][1]),float(cmlStressData[2][2]),float(cmlStressData[1][2]),float(cmlStressData[0][2]),float(cmlStressData[0][1])])
-				else: 
-					stress = S.row_stack((stress,S.array([float(cmlStressData[0][0]),float(cmlStressData[1][1]),float(cmlStressData[2][2]),float(cmlStressData[1][2]),float(cmlStressData[0][2]),float(cmlStressData[0][1])]) ))	
-				
 
 	
 
@@ -993,13 +615,6 @@ def main(input_options, libmode=False):
 
 	S.savetxt(seedname + '_cij.txt', finalCijMatrix)	
 	
-	"""
-	Here on in is just the XML output
-	"""
-	if(options.xml or options.force):
-		dumpXML(seedname)
-
-	# 
 	
 def calculate(outfile, files, params=None, paramfile=None):
     return main([outfile,files], libmode=True)
