@@ -990,7 +990,8 @@ def main(input_options, libmode=False):
 	print format % ("Shear Modulus", voigtG, reussG, hillG, units)
 	
 	print "\n<>-----------------------------------------------------------------------<>\n"		
-	
+
+	S.savetxt(seedname + '_cij.txt', finalCijMatrix)	
 	
 	"""
 	Here on in is just the XML output
