@@ -262,9 +262,9 @@ def main(input_options, libmode=False):
 				this_strain[1] = disps[1] / np.sqrt(cell[1][0]**2+cell[1][1]**2+cell[1][2]**2)
 				this_strain[2] = disps[2] / np.sqrt(cell[2][0]**2+cell[2][1]**2+cell[2][2]**2)
 				# off diagonals - we only strain upper right corner of cell matrix, so strain is 1/2*du/dx...
-				this_strain[3] = 0.5 * (disps[3] / np.sqrt(cell[0][0]**2+cell[0][1]**2+cell[0][2]**2))
-				this_strain[4] = 0.5 * (disps[4] / np.sqrt(cell[1][0]**2+cell[1][1]**2+cell[1][2]**2))
-				this_strain[5] = 0.5 * (disps[5] / np.sqrt(cell[2][0]**2+cell[2][1]**2+cell[2][2]**2))
+				this_strain[3] = 0.5 * (disps[3] / np.sqrt(cell[1][0]**2+cell[1][1]**2+cell[1][2]**2))
+				this_strain[4] = 0.5 * (disps[4] / np.sqrt(cell[0][0]**2+cell[0][1]**2+cell[0][2]**2))
+				this_strain[5] = 0.5 * (disps[5] / np.sqrt(cell[0][0]**2+cell[0][1]**2+cell[0][2]**2))
 
 				# Deform cell - only apply deformation to upper right corner
 				defcell = [[cell[0][0]+disps[0], cell[0][1]+disps[5], cell[0][2]+disps[4]],
