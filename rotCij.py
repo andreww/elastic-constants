@@ -14,7 +14,7 @@ import numpy as np
 
 version = 0.1
 
-def _rotMat(axis, theta):
+def _rotMat6(axis, theta):
 	# Obviously, this could be heavily optimized to reduce duplicate trig...
 	# Rotation matrix is most zero
 	# see http://www.engin.brown.edu/courses/en224/anis_general/anis_general.htm
@@ -68,7 +68,7 @@ def rotCij (inCij, axis, theta):
 	Input and output tensor is a 6*6 scipy 
 	array object. Does not change input matrix.
 	"""
-	rotMat = _rotMat(axis, theta)
+	rotMat = _rotMat6(axis, theta)
 	rotMat_T = np.array(np.transpose(np.matrix(rotMat)))
 	# Must be matrix for mat mult, or we'll do it by element.
 	outCij = np.array(np.matrix(rotMat) * np.matrix(inCij) * np.matrix(rotMat_T))
