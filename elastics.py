@@ -193,6 +193,7 @@ def main(input_options, libmode=False):
 	
 	# initialise 1d array to store all 21 unique elastic constants - will be transformed into 6x6 matrix later
 	finalCijs = S.zeros((21,1))
+	errors = S.zeros((21,1))
 	
 	for patt in range(numStrainPatterns/numsteps):
 		
@@ -288,21 +289,24 @@ def main(input_options, libmode=False):
 				P.plot([strain[0,index2-1],strain[numsteps-1,index2-1]],[cijFitted*strain[0,index2-1]+intercept,cijFitted*strain[numsteps-1,index2-1]+intercept])
 				P.plot(strain[:,index2-1],stress[:,index1-1],'ro')
 			
-			return cijFitted
+			return cijFitted, error
 		
 			
-		def __appendOrReplace(valList,val):
+		def __appendOrReplace(valList,erList,val):
 			try:
-				valList.append(val)
-				return sum(valList)/len(valList)
+				valList.append(val[0])
+				erList.append(val[1])
+				return (sum(valList)/len(valList)), (S.sqrt(sum([x**2 for x in erList])/len(erList)**2))
 			except NameError:
-				return val
+				return val[0], val[1]
 		
 				
 		def __createListAndAppend(val):
 			newList = []
-			newList.append(val)
-			return val, newList
+			newList.append(val[0])
+			errorList = []
+			errorList.append(val[1])
+			return val[0], newList, val[1], errorList
 		
 
 		cij = S.zeros(21)
@@ -316,9 +320,12 @@ def main(input_options, libmode=False):
 			
 			if S.all(strainsUsed.transpose() == S.array([[1.0, 0.0, 0.0, 1.0, 0.0, 0.0]])):	# strain pattern e1+e4		
 
-				finalCijs[0] = __fit(1,1)                    # fit C11
-				finalCijs[6] = (__fit(2,1) + __fit(3,1))/2   # fit C21+C31		
-				finalCijs[3] = __fit(4,4)                    # fit C44
+				finalCijs[0], errors[0] = __fit(1,1)                    # fit C11
+				fit_21, fit_21_error = __fit(2,1)
+				fit_31, fit_31_error = __fit(3,1)
+				finalCijs[6] = (fit_21 + fit_31)/2   # fit C21+C31		
+				errors[6] = S.sqrt((fit_21_error**2)/4 + (fit_31_error**2)/4)
+				finalCijs[3], errors[3] = __fit(4,4)                    # fit C44
 				
 			else:
 				print "Unsupported strain pattern"
@@ -328,28 +335,27 @@ def main(input_options, libmode=False):
 			if S.all(strainsUsed.transpose() == S.array([[0.0, 0.0, 1.0, 0.0, 0.0, 0.0]])):	# strain pattern e3 (hexagonal)
 
 					# fit C13 + C23, and add to list (more values coming...)
-					cij13 = []
-					cij13.append(__fit(1,3))
-					cij13.append(__fit(2,3))
+					finalCijs[7], cij13, errors[7], er13 = __createListAndAppend(__fit(1,3))
+					finalCijs[7], cij13, errors[7], er13 = __createListAndAppend(__fit(2,3))
 										
-					finalCijs[2] = __fit(3,3)                # fit C33
+					finalCijs[2], errors[2] = __fit(3,3)                # fit C33
 					
 			elif S.all(strainsUsed.transpose() == S.array([[1.0, 0.0, 0.0, 1.0, 0.0, 0.0]])):	# strain pattern e1+e4 (hexagonal)
 
-					finalCijs[0] = __fit(1,1)                          # fit C11
-					finalCijs[6] = __fit(2,1)                          # fit C21
-					finalCijs[7] = __appendOrReplace(cij13,__fit(3,1)) # fit C31
-					finalCijs[3] = __fit(4,4)                          # fit C44
+					finalCijs[0], errors[0] = __fit(1,1)                          # fit C11
+					finalCijs[6], errors[6] = __fit(2,1)                          # fit C21
+					finalCijs[7], errors[7] = __appendOrReplace(cij13,er13,__fit(3,1)) # fit C31
+					finalCijs[3], errors[3] = __fit(4,4)                          # fit C44
 
 			elif S.all(strainsUsed.transpose() == S.array([[1.0, 0.0, 0.0, 0.0, 0.0, 0.0]])):	
 				
 					# strain pattern e1 (trigonal-high)
 
-					finalCijs[0] = __fit(1,1)                # fit C11
-					finalCijs[6] = __fit(2,1)                # fit C21
-					finalCijs[7] = __fit(3,1)                # fit C31
-					finalCijs[8] = __fit(4,1)                # fit C41
-					finalCijs[9] = __fit(5,1)                # fit C51
+					finalCijs[0], errors[0] = __fit(1,1)                # fit C11
+					finalCijs[6], errors[6] = __fit(2,1)                # fit C21
+					finalCijs[7], errors[7] = __fit(3,1)                # fit C31
+					finalCijs[8], errors[8] = __fit(4,1)                # fit C41
+					finalCijs[9], errors[9] = __fit(5,1)                # fit C51
 					
 					
 			elif S.all(strainsUsed.transpose() == S.array([[0.0, 0.0, 1.0, 1.0, 0.0, 0.0]])):	
@@ -357,8 +363,8 @@ def main(input_options, libmode=False):
 					# strain pattern e3+e4 (trigonal-high)
 					# could recalculate C13/C14/C23/C24/C46 here, but won't just now
 														
-					finalCijs[2] = __fit(3,3)                # fit C33
-					finalCijs[3] = __fit(4,4)                # fit C44
+					finalCijs[2], errors[2] = __fit(3,3)                # fit C33
+					finalCijs[3], errors[3] = __fit(4,4)                # fit C44
 					
 			else:
 				print "Unsupported strain pattern"
@@ -369,19 +375,19 @@ def main(input_options, libmode=False):
 				
 					# strain pattern e1 
 
-					finalCijs[0] = __fit(1,1)                # fit C11
-					finalCijs[6] = __fit(2,1)                # fit C21
-					finalCijs[7] = __fit(3,1)                # fit C31
-					finalCijs[8] = __fit(4,1)                # fit C41
-					finalCijs[9] = __fit(5,1)                # fit C51
+					finalCijs[0], errors[0] = __fit(1,1)                # fit C11
+					finalCijs[6], errors[6] = __fit(2,1)                # fit C21
+					finalCijs[7], errors[7] = __fit(3,1)                # fit C31
+					finalCijs[8], errors[8] = __fit(4,1)                # fit C41
+					finalCijs[9], errors[9] = __fit(5,1)                # fit C51
 					
 			elif S.all(strainsUsed.transpose() == S.array([[0.0, 0.0, 1.0, 1.0, 0.0, 0.0]])):	
 				
 					# strain pattern e3+e4
 					# could recalculate C13/C14/C23/C24/C46 here, but won't just now
 
-					finalCijs[2] = __fit(3,3)                # fit C33
-					finalCijs[3] = __fit(4,4)                # fit C44
+					finalCijs[2], errors[2] = __fit(3,3)                # fit C33
+					finalCijs[3], errors[3] = __fit(4,4)                # fit C44
 					
 			else:
 				print "Unsupported strain pattern"
@@ -390,17 +396,17 @@ def main(input_options, libmode=False):
 		elif symmetryType == "Tetragonal":			
 			if S.all(strainsUsed.transpose() == S.array([[1.0, 0.0, 0.0, 1.0, 0.0, 0.0]])):	# strain pattern e1+e4 
 
-					finalCijs[0]  = __fit(1,1)               # fit C11
-					finalCijs[6]  = __fit(2,1)               # fit C21
-					finalCijs[7]  = __fit(3,1)               # fit C31
-					finalCijs[10] = __fit(6,1)               # fit C61
-					finalCijs[3]  = __fit(4,4)               # fit C44
+					finalCijs[0],  errors[0]  = __fit(1,1)               # fit C11
+					finalCijs[6],  errors[6]  = __fit(2,1)               # fit C21
+					finalCijs[7],  errors[7]  = __fit(3,1)               # fit C31
+					finalCijs[10], errors[10] = __fit(6,1)               # fit C61
+					finalCijs[3],  errors[3]  = __fit(4,4)               # fit C44
 
 					
 			elif S.all(strainsUsed.transpose() == S.array([[0.0, 0.0, 1.0, 0.0, 0.0, 1.0]])):	# strain pattern e3+e6
 					
-					finalCijs[2] = __fit(3,3)                # fit C33
-					finalCijs[5] = __fit(6,6)                # fit C66
+					finalCijs[2], errors[2] = __fit(3,3)                # fit C33
+					finalCijs[5], errors[5] = __fit(6,6)                # fit C66
 					
 			else:
 				print "Unsupported strain pattern"
@@ -409,25 +415,25 @@ def main(input_options, libmode=False):
 		elif symmetryType == "Orthorhombic":			
 			if S.all(strainsUsed.transpose() == S.array([[1.0, 0.0, 0.0, 1.0, 0.0, 0.0]])):	# strain pattern e1+e4 
 
-					finalCijs[0] = __fit(1,1)                                # fit C11
-					finalCijs[6], cij12 = __createListAndAppend(__fit(2,1))  # fit C21
-					finalCijs[7], cij13 = __createListAndAppend(__fit(3,1))  # fit C31
-					finalCijs[3] = __fit(4,4)                                # fit C44
+					finalCijs[0], errors[0] = __fit(1,1)                                # fit C11
+					finalCijs[6], cij12, errors[6], er12 = __createListAndAppend(__fit(2,1))  # fit C21
+					finalCijs[7], cij13, errors[7], er13 = __createListAndAppend(__fit(3,1))  # fit C31
+					finalCijs[3], errors[3] = __fit(4,4)                                # fit C44
 					
 			elif S.all(strainsUsed.transpose() == S.array([[0.0, 1.0, 0.0, 0.0, 1.0, 0.0]])):	# strain pattern e2+e5 
 
 					
-					finalCijs[6] = __appendOrReplace(cij12,__fit(1,2))       # fit C12	
-					finalCijs[1] = __fit(2,2)                                # fit C22
-					finalCijs[11], cij23 = __createListAndAppend(__fit(3,2)) # fit C32						
-					finalCijs[4] = __fit(5,5)                                # fit C55
+					finalCijs[6], errors[6] = __appendOrReplace(cij12,er12,__fit(1,2))       # fit C12	
+					finalCijs[1], errors[1] = __fit(2,2)                                # fit C22
+					finalCijs[11], cij23, errors[11], er23 = __createListAndAppend(__fit(3,2)) # fit C32						
+					finalCijs[4], errors[4] = __fit(5,5)                                # fit C55
 					
 			elif S.all(strainsUsed.transpose() == S.array([[0.0, 0.0, 1.0, 0.0, 0.0, 1.0]])):	# strain pattern e3+e6 
 
-					finalCijs[7]  = __appendOrReplace(cij13,__fit(1,3))      # fit C13
-					finalCijs[11] = __appendOrReplace(cij23,__fit(2,3))      # fit C23
-					finalCijs[2]  = __fit(3,3)                               # fit C33
-					finalCijs[5]  = __fit(6,6)                               # fit C66
+					finalCijs[7],  errors[7]  = __appendOrReplace(cij13,er13,__fit(1,3))      # fit C13
+					finalCijs[11], errors[11] = __appendOrReplace(cij23,er23,__fit(2,3))      # fit C23
+					finalCijs[2], errors[2]  = __fit(3,3)                               # fit C33
+					finalCijs[5], errors[5]  = __fit(6,6)                               # fit C66
 					
 			else:
 				print "Unsupported strain pattern"
@@ -436,37 +442,37 @@ def main(input_options, libmode=False):
 		elif symmetryType == "Monoclinic":			
 			if S.all(strainsUsed.transpose() == S.array([[1.0, 0.0, 0.0, 1.0, 0.0, 0.0]])):	# strain pattern e1+e4 
 
-					finalCijs[0] = __fit(1,1)                                # fit C11
-					finalCijs[6], cij12 = __createListAndAppend(__fit(2,1))  # fit C21
-					finalCijs[7], cij13 = __createListAndAppend(__fit(3,1))  # fit C31
-					finalCijs[3] = __fit(4,4)                                # fit C44				
-					finalCijs[9], cij51 = __createListAndAppend(__fit(5,1))  # fit C51	
-					finalCijs[19], cij64 = __createListAndAppend(__fit(6,4)) # fit C64
+					finalCijs[0], errors[0] = __fit(1,1)                                # fit C11
+					finalCijs[6], cij12, errors[6], er12 = __createListAndAppend(__fit(2,1))  # fit C21
+					finalCijs[7], cij13, errors[7], er13 = __createListAndAppend(__fit(3,1))  # fit C31
+					finalCijs[3], errors[3] = __fit(4,4)                                # fit C44				
+					finalCijs[9], cij51, errors[9], er51 = __createListAndAppend(__fit(5,1))  # fit C51	
+					finalCijs[19], cij64, errors[19], er64 = __createListAndAppend(__fit(6,4)) # fit C64
 
 					
 			elif S.all(strainsUsed.transpose() == S.array([[0.0, 0.0, 1.0, 0.0, 0.0, 1.0]])):	# strain pattern e3+e6 
 
-					finalCijs[7] = __appendOrReplace(cij13,__fit(1,3))       # fit C13
-					finalCijs[11], cij23 = __createListAndAppend(__fit(2,3)) # fit C23
-					finalCijs[2] = __fit(3,3)                                # fit C33
-					finalCijs[16], cij53 = __createListAndAppend(__fit(5,3)) # fit C53
-					finalCijs[19] = __appendOrReplace(cij64,__fit(4,6))      # fit C46
-					finalCijs[5] = __fit(6,6)                                # fit C66
+					finalCijs[7], errors[7] = __appendOrReplace(cij13,er13,__fit(1,3))       # fit C13
+					finalCijs[11], cij23, errors[11], er23 = __createListAndAppend(__fit(2,3)) # fit C23
+					finalCijs[2], errors[2] = __fit(3,3)                                # fit C33
+					finalCijs[16], cij53, errors[16], er53 = __createListAndAppend(__fit(5,3)) # fit C53
+					finalCijs[19], errors[19] = __appendOrReplace(cij64,er64,__fit(4,6))      # fit C46
+					finalCijs[5], errors[5] = __fit(6,6)                                # fit C66
 					
 			elif S.all(strainsUsed.transpose() == S.array([[0.0, 1.0, 0.0, 0.0, 0.0, 0.0]])):	# strain pattern e2
 
-					finalCijs[6]  = __appendOrReplace(cij12,__fit(1,2))      # fit C12
-					finalCijs[1]  = __fit(2,2)                               # fit C22
-					finalCijs[11] = __appendOrReplace(cij23,__fit(3,2))      # fit C32					
-					finalCijs[13], cij52 = __createListAndAppend(__fit(5,2)) # fit C52
+					finalCijs[6], errors[6]  = __appendOrReplace(cij12,er12,__fit(1,2))      # fit C12
+					finalCijs[1], errors[1]  = __fit(2,2)                               # fit C22
+					finalCijs[11],errors[11] = __appendOrReplace(cij23,er23,__fit(3,2))      # fit C32					
+					finalCijs[13], cij52, errors[13], er52 = __createListAndAppend(__fit(5,2)) # fit C52
 
 					
 			elif S.all(strainsUsed.transpose() == S.array([[0.0, 0.0, 0.0, 0.0, 1.0, 0.0]])):	# strain pattern e5
 
-					finalCijs[9]  = __appendOrReplace(cij51,__fit(1,5))      # fit C15
-					finalCijs[13] = __appendOrReplace(cij52,__fit(2,5))      # fit C25
-					finalCijs[16] = __appendOrReplace(cij53,__fit(3,5))      # fit C35
-					finalCijs[4]  = __fit(5,5)                               # fit C55
+					finalCijs[9], errors[9]  = __appendOrReplace(cij51,er51,__fit(1,5))      # fit C15
+					finalCijs[13],errors[13] = __appendOrReplace(cij52,er52,__fit(2,5))      # fit C25
+					finalCijs[16],errors[16] = __appendOrReplace(cij53,er53,__fit(3,5))      # fit C35
+					finalCijs[4], errors[4]  = __fit(5,5)                               # fit C55
 			else:
 				print "Unsupported strain pattern"
 				sys.exit(1)
@@ -475,57 +481,57 @@ def main(input_options, libmode=False):
 			
 			if S.all(strainsUsed.transpose() == S.array([[1.0, 0.0, 0.0, 0.0, 0.0, 0.0]])):	# strain pattern e1
 
-					finalCijs[0]  = __fit(1,1)                               # fit C11
-					finalCijs[6], cij12 = __createListAndAppend(__fit(2,1))  # fit C21	
-					finalCijs[7], cij13 = __createListAndAppend(__fit(3,1))  # fit C31					
-					finalCijs[8], cij14 = __createListAndAppend(__fit(4,1))  # fit C41					
-					finalCijs[9], cij15 = __createListAndAppend(__fit(5,1))  # fit C51					
-					finalCijs[10],cij16 = __createListAndAppend(__fit(6,1))  # fit C61					
+					finalCijs[0], errors[0]  = __fit(1,1)                               # fit C11
+					finalCijs[6], cij12, errors[6], er12 = __createListAndAppend(__fit(2,1))  # fit C21	
+					finalCijs[7], cij13, errors[7], er13 = __createListAndAppend(__fit(3,1))  # fit C31					
+					finalCijs[8], cij14, errors[8], er14 = __createListAndAppend(__fit(4,1))  # fit C41					
+					finalCijs[9], cij15, errors[9], er15 = __createListAndAppend(__fit(5,1))  # fit C51					
+					finalCijs[10],cij16, errors[10],er16 = __createListAndAppend(__fit(6,1))  # fit C61					
 					
 			elif S.all(strainsUsed.transpose() == S.array([[0.0, 1.0, 0.0, 0.0, 0.0, 0.0]])):	# strain pattern e2
 
-					finalCijs[6]  = __appendOrReplace(cij12,__fit(1,2))       # fit C12
-					finalCijs[1]  = __fit(2,2)                                # fit C22
-					finalCijs[11], cij23 = __createListAndAppend(__fit(3,2))  # fit C32	
-					finalCijs[12], cij24 = __createListAndAppend(__fit(4,2))  # fit C42	
-					finalCijs[13], cij25 = __createListAndAppend(__fit(5,2))  # fit C52	
-					finalCijs[14], cij26 = __createListAndAppend(__fit(6,2))  # fit C62		
+					finalCijs[6], errors[6]  = __appendOrReplace(cij12,er12,__fit(1,2))       # fit C12
+					finalCijs[1], errors[1]  = __fit(2,2)                                # fit C22
+					finalCijs[11], cij23, errors[11], er23 = __createListAndAppend(__fit(3,2))  # fit C32	
+					finalCijs[12], cij24, errors[12], er24 = __createListAndAppend(__fit(4,2))  # fit C42	
+					finalCijs[13], cij25, errors[13], er25 = __createListAndAppend(__fit(5,2))  # fit C52	
+					finalCijs[14], cij26, errors[14], er26 = __createListAndAppend(__fit(6,2))  # fit C62		
 					
 			elif S.all(strainsUsed.transpose() == S.array([[0.0, 0.0, 1.0, 0.0, 0.0, 0.0]])):	# strain pattern e3
 
-					finalCijs[7]  = __appendOrReplace(cij13,__fit(1,3))       # fit C13
-					finalCijs[11] = __appendOrReplace(cij23,__fit(2,3))       # fit C23					
-					finalCijs[2]  = __fit(3,3)                                # fit C33
-					finalCijs[15], cij34 = __createListAndAppend(__fit(4,3))  # fit C43	
-					finalCijs[16], cij35 = __createListAndAppend(__fit(5,3))  # fit C53	
-					finalCijs[17], cij36 = __createListAndAppend(__fit(6,3))  # fit C63	
+					finalCijs[7],  errors[7]  = __appendOrReplace(cij13,er13,__fit(1,3))       # fit C13
+					finalCijs[11], errors[11] = __appendOrReplace(cij23,er23,__fit(2,3))       # fit C23					
+					finalCijs[2],  errors[2]  = __fit(3,3)                                # fit C33
+					finalCijs[15], cij34, errors[15], er34 = __createListAndAppend(__fit(4,3))  # fit C43	
+					finalCijs[16], cij35, errors[16], er35 = __createListAndAppend(__fit(5,3))  # fit C53	
+					finalCijs[17], cij36, errors[17], er36 = __createListAndAppend(__fit(6,3))  # fit C63	
 					
 			elif S.all(strainsUsed.transpose() == S.array([[0.0, 0.0, 0.0, 1.0, 0.0, 0.0]])):	# strain pattern e4
 
-					finalCijs[8]   = __appendOrReplace(cij14,__fit(1,4))      # fit C14
-					finalCijs[12]  = __appendOrReplace(cij24,__fit(2,4))      # fit C24
-					finalCijs[15]  = __appendOrReplace(cij34,__fit(3,4))      # fit C34
-					finalCijs[3]   = __fit(4,4)                               # fit C44
-					finalCijs[18], cij45 = __createListAndAppend(__fit(5,4))  # fit C54	
-					finalCijs[19], cij46 = __createListAndAppend(__fit(6,4))  # fit C64		
+					finalCijs[8],  errors[8]  = __appendOrReplace(cij14,er14,__fit(1,4))      # fit C14
+					finalCijs[12], errors[12] = __appendOrReplace(cij24,er24,__fit(2,4))      # fit C24
+					finalCijs[15], errors[15] = __appendOrReplace(cij34,er34,__fit(3,4))      # fit C34
+					finalCijs[3],  errors[3]  = __fit(4,4)                               # fit C44
+					finalCijs[18], cij45, errors[18], er45 = __createListAndAppend(__fit(5,4))  # fit C54	
+					finalCijs[19], cij46, errors[19], er46 = __createListAndAppend(__fit(6,4))  # fit C64		
 
 			elif S.all(strainsUsed.transpose() == S.array([[0.0, 0.0, 0.0, 0.0, 1.0, 0.0]])):	# strain pattern e5
 			
-					finalCijs[9]    = __appendOrReplace(cij15,__fit(1,5))     # fit C15
-					finalCijs[13]   = __appendOrReplace(cij25,__fit(2,5))     # fit C25
-					finalCijs[16]   = __appendOrReplace(cij35,__fit(3,5))     # fit C35
-					finalCijs[18]   = __appendOrReplace(cij45,__fit(4,5))     # fit C45
-					finalCijs[4]    = __fit(5,5)                              # fit C55
-					finalCijs[20], cij56 = __createListAndAppend(__fit(6,5))  # fit C65	
+					finalCijs[9],  errors[9]  = __appendOrReplace(cij15,er15,__fit(1,5))     # fit C15
+					finalCijs[13], errors[13] = __appendOrReplace(cij25,er25,__fit(2,5))     # fit C25
+					finalCijs[16], errors[16] = __appendOrReplace(cij35,er35,__fit(3,5))     # fit C35
+					finalCijs[18], errors[18] = __appendOrReplace(cij45,er45,__fit(4,5))     # fit C45
+					finalCijs[4],  errors[4]  = __fit(5,5)                              # fit C55
+					finalCijs[20], cij56, errors[20], er56 = __createListAndAppend(__fit(6,5))  # fit C65	
 					
 			elif S.all(strainsUsed.transpose() == S.array([[0.0, 0.0, 0.0, 0.0, 0.0, 1.0]])):	# strain pattern e6
 			
-					finalCijs[10]  = __appendOrReplace(cij16,__fit(1,6))      # fit C16
-					finalCijs[14]  = __appendOrReplace(cij26,__fit(2,6))      # fit C26
-					finalCijs[17]  = __appendOrReplace(cij36,__fit(3,6))      # fit C36
-					finalCijs[19]  = __appendOrReplace(cij46,__fit(4,6))      # fit C46
-					finalCijs[20]  = __appendOrReplace(cij56,__fit(5,6))      # fit C56
-					finalCijs[5]   = __fit(6,6)                               # fit C66		
+					finalCijs[10], errors[10]  = __appendOrReplace(cij16,er16,__fit(1,6))      # fit C16
+					finalCijs[14], errors[14]  = __appendOrReplace(cij26,er26,__fit(2,6))      # fit C26
+					finalCijs[17], errors[17]  = __appendOrReplace(cij36,er36,__fit(3,6))      # fit C36
+					finalCijs[19], errors[19]  = __appendOrReplace(cij46,er46,__fit(4,6))      # fit C46
+					finalCijs[20], errors[20]  = __appendOrReplace(cij56,er56,__fit(5,6))      # fit C56
+					finalCijs[5],  errors[5]   = __fit(6,6)                               # fit C66		
 					
 			else:
 				print "Unsupported strain pattern"
@@ -542,19 +548,23 @@ def main(input_options, libmode=False):
 	if symmetryType == "Trigonal-high/Hexagonal" or symmetryType == "Trigonal-low":
 		# for these systems, C66 is calculated as a combination of the other Cijs.
 		finalCijs[5] = 0.5*(finalCijs[0]-finalCijs[6])
+		errors[5] = S.sqrt(0.25*(errors[0]**2+errors[6]**2))
 	
 	c = cMatrix(symmetryType,TetrHigh)
 	
 	# Generate the 6x6 matrix of elastic constants 
 	# - negative values signify a symmetry relation
 	finalCijMatrix = S.zeros((6,6))	
+	finalErrors = S.zeros((6,6))
 	for i in range(0,6):
 		for j in range(0,6):
 			index = int(c[i,j])
 			if index > 0:	
 				finalCijMatrix[i,j] = finalCijs[index-1]
+				finalErrors[i,j] = errors[index-1]
 			elif index < 0:
 				finalCijMatrix[i,j] = -finalCijs[-index-1]
+				finalErrors[i,j] = -errors[-index-1]
 				
 	# Tests
 	if symmetryType == "Cubic":
@@ -569,7 +579,8 @@ def main(input_options, libmode=False):
 	print "\n<>---------------------------- RESULTS ----------------------------------<>\n"		
 	print "Final Cij matrix ("+units+"):"
 	print S.array2string(finalCijMatrix,max_line_width=130,suppress_small=True)
-	
+	print "\nErrors on Cij matrix ("+units+")::"
+	print S.array2string(finalErrors,max_line_width=130,suppress_small=True)
 	
 	sij = S.linalg.inv(finalCijMatrix)
 	
