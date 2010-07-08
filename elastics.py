@@ -586,7 +586,13 @@ def main(input_options, libmode=False):
 	
 	print "\nFinal Sij matrix ("+units+"-1):"
 	print S.array2string(sij,max_line_width=130,suppress_small=True)
-	
+
+	print"\n<>----------------------------------------------------------------------<>\n"	
+	if symmetryType == "Cubic":
+		print "  Zener anisotropy index     : %6.5f" % (CijUtil.zenerAniso(finalCijMatrix))
+	print "  Universal anisotropy index : %6.5f" % (CijUtil.uAniso(finalCijMatrix))
+	print "  (Rangnthn and Ostoja-Starzewski, PRL 101, 055504)\n"
+
 	# bulkModulus = (finalCijs[1]+2*finalCijs[7])/3  #cubic only
 	youngX = 1/sij[0,0]
 	youngY = 1/sij[1,1]
@@ -594,11 +600,6 @@ def main(input_options, libmode=False):
 	
 	
 	format = "%18s : %11.5f %8s"
-	
-	print ""
-	# print format % ("Bulk Modulus", bulkModulus[0], units)
-	# print format % ("Compressibility", 1/bulkModulus[0], "1/"+ units)
-	
 	print "\n                          x           y           z"
 	print "%18s : %11.5f %11.5f %11.5f %6s" % ("Young's Modulus", youngX, youngY, youngZ, units)
 
@@ -623,7 +624,7 @@ def main(input_options, libmode=False):
 	print format % ("Shear Modulus", voigtG, reussG, hillG, units)
 	
 	print "\n<>-----------------------------------------------------------------------<>\n"		
-
+	
 	S.savetxt(seedname + '_cij.txt', finalCijMatrix)	
 	
 	

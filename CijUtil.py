@@ -38,6 +38,23 @@ def polyCij(Cij):
 
 	return (voigtB, reussB, voigtG, reussG, ((voigtB+reussB)/2.0), ((voigtG+reussG)/2.0))
 
+def zenerAniso(Cij):
+	"""Returns Zener anisotropy index, A, defined as
+	2C44/(C11-C12). This is unity for an isotropic crystal 
+	and, for a cubic crystal C44 and 1/2(C11-C12) are shear 
+	strains accross the (100) and (110) planes, respectivly.
+	See Zener, Elasticity and Anelasticity of Metals, 1948
+	or doi:10.1103/PhysRevLett.101.055504 (c.f. uAniso).
+	Note that we don't check that the crystal is cubic!"""
+	return ((Cij[3,3]*2)/(Cij[0,0]-Cij[0,1]))
+
+def uAniso(Cij):
+	"""Returns the Universal elastic anisotropy index defined 
+	by Ranganathan and Ostoja-Starzewski (PRL 101, 05504; 2008
+	doi:10.1103/PhysRevLett.101.055504 ). Valid for all systems."""
+	(voigtB, reussB, voigtG, reussG, hillB, hillG) = polyCij(Cij)
+	return ((5*(voigtG/reussG))+(voigtB/reussB)-6)
+
 if __name__ == '__main__':
 	import sys
 	inFile = file(sys.argv[1], 'r')
