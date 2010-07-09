@@ -582,7 +582,7 @@ def main(input_options, libmode=False):
 	print "\nErrors on Cij matrix ("+units+"):"
 	print S.array2string(finalErrors,max_line_width=130,suppress_small=True)
 
-	(sij, esij) = CijUtil.invertCij(finalCijMatrix,finalErrors)	
+	(sij, esij, dummy) = CijUtil.invertCij(finalCijMatrix,finalErrors)	
 	
 	print "\nFinal Sij matrix ("+units+"-1):"
 	print S.array2string(sij,max_line_width=130,suppress_small=True)
