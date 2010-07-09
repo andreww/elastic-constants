@@ -579,13 +579,15 @@ def main(input_options, libmode=False):
 	print "\n<>---------------------------- RESULTS ----------------------------------<>\n"		
 	print "Final Cij matrix ("+units+"):"
 	print S.array2string(finalCijMatrix,max_line_width=130,suppress_small=True)
-	print "\nErrors on Cij matrix ("+units+")::"
+	print "\nErrors on Cij matrix ("+units+"):"
 	print S.array2string(finalErrors,max_line_width=130,suppress_small=True)
-	
-	sij = S.linalg.inv(finalCijMatrix)
+
+	(sij, esij) = CijUtil.invertCij(finalCijMatrix,finalErrors)	
 	
 	print "\nFinal Sij matrix ("+units+"-1):"
 	print S.array2string(sij,max_line_width=130,suppress_small=True)
+	print "\nErrors on Sij matrix ("+units+"-1):"
+	print S.array2string(esij,max_line_width=130,suppress_small=True)
 
 	print"\n<>----------------------------------------------------------------------<>\n"	
 	if symmetryType == "Cubic":
