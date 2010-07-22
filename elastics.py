@@ -619,11 +619,11 @@ def main(input_options, libmode=False):
 	
 	
 	print "\n<>--------------------- POLYCRYSTALLINE RESULTS -------------------------<>\n"		
-	(voigtB, reussB, voigtG, reussG, hillB, hillG) = CijUtil.polyCij(finalCijMatrix)
-	format = "%16s : %11.5f %11.5f %11.5f %6s"
-	print "                      Voigt       Reuss       Hill"
-	print format % ("Bulk Modulus", voigtB, reussB, hillB, units)
-	print format % ("Shear Modulus", voigtG, reussG, hillG, units)
+	(voigtB, reussB, voigtG, reussG, hillB, hillG, evB, erB, evG, erG, ehB, ehG) = CijUtil.polyCij(finalCijMatrix, finalErrors)
+	format = "%16s : %11.5f %11.5f %11.5f %11.5f %11.5f %11.5f %6s"
+	print "                      Voigt         +/-       Reuss        +/-       Hill        +/-"
+	print format % ("Bulk Modulus", voigtB, evB, reussB, erB, hillB, ehB, units)
+	print format % ("Shear Modulus", voigtG, evG, reussG, erG, hillG, ehG, units)
 	
 	print "\n<>-----------------------------------------------------------------------<>\n"		
 	
