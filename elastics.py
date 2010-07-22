@@ -113,6 +113,7 @@ def main(input_options, libmode=False):
 			p.add_option('--force-cml-output','-f', action='store_true', help="Force CML output",dest="force")
 			p.add_option('--graphics', '-g', action='store_true', help="Show graphics (requires matplotlib)")
 			p.add_option('--debug', '-d', action='store_true', help="Debug mode (output to stdout rather than file)")
+			p.add_option('--latex', action='store_true', help="dump LaTeX formatted table to file",dest="latex")
 
 			options,arguments = p.parse_args(args=input_options)
 		else:
@@ -628,6 +629,8 @@ def main(input_options, libmode=False):
 	print "\n<>-----------------------------------------------------------------------<>\n"		
 	
 	S.savetxt(seedname + '_cij.txt', finalCijMatrix)	
+	if options.latex:
+		CijUtil.latexCij(finalCijMatrix, finalErrors, seedname + '.tex')
 	
 	
 def calculate(outfile, files, params=None, paramfile=None):
