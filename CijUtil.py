@@ -41,6 +41,13 @@ def latexCij(Cij, eCij, outputfile):
 	return None
 	
 
+def txtCij(Cij, filename):
+
+	f = open(filename, "a")
+	for i in range(6):
+		for j in range(i,6):
+			f.write("{0:5.1f} ".format(Cij[i,j]))
+        f.write("\n")
 	
 
 def invertCij(Cij, eCij):
