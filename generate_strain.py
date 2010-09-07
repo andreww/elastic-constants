@@ -141,7 +141,8 @@ def cellABC2cellCART (a, b, c, alp, bet, gam, Convention=1):
 	# Get lattice vetors on cart frame from a, b, c and angles
 	# For monoclinic, b // Y and c // Z
 	if (alp == 90.0):
-      		cosa = 0.0;
+                sina = 1.0
+      		cosa = 0.0
 	else:
       		cosa = np.cos(np.radians(alp))
 	if (bet == 90.0):
@@ -156,16 +157,18 @@ def cellABC2cellCART (a, b, c, alp, bet, gam, Convention=1):
 	else:
 		sing = np.sin(np.radians(gam))
 		cosg = np.cos(np.radians(gam))
-	a_x = a
-	a_y = 0.0
-	a_z = 0.0
+        c_x = 0.0
+        c_y = 0.0
+        c_z = c
+
 	b_z = 0.0
 	b_x = b*cosg
 	b_y = b*sing
-	c_x = c*cosb
-	c_y = c*(cosa - cosg*cosb)/sing
-	trm1 = c_y/c
-	c_z = c*np.sqrt(1.0 - cosb**2 - trm1**2)
+
+        a_z = a*cosb
+        a_y = a*(cosa - cosg*cosb)/sing
+	trm1 = a_y/a
+	a_x = a*np.sqrt(1.0 - cosb**2 - trm1**2)
 
 	return [[a_x, a_y, a_z], [b_x, b_y, b_z], [c_x, c_y, c_z]]
 
