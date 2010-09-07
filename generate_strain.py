@@ -123,7 +123,7 @@ def get_options(input_options, libmode):
 		p.add_option('--steps', '-n', action='store', type='int', dest="numsteps", \
 	   	              help='Number of positive strain magnitudes to impose (defaults to 3)')
 		p.add_option('--strain', '-s', action='store', type='float', dest="strain", \
-		              help='Maximum magnitude of deformation to produced strained cells (defaults to 0.01)')
+		              help='Maximum magnitude of deformation to produced strained cells (defaults to 0.1)')
 		p.add_option('--lattice', action='store', type='int', dest="lattice", \
 		              help='Lattice type to set pattern of deformation (extracted from .castep file)')
 		options,arguments = p.parse_args(args=input_options)
@@ -206,7 +206,7 @@ def main(input_options, libmode=False):
 	                4:"Tetragonal", 5:"Cubic", 6:"Trigonal-low", 7:"Trigonal-high/Hexagonal"}
 	maxstrain = options.strain
 	if (maxstrain == None):
-		maxstrain = 0.01
+		maxstrain = 0.1
 	numsteps = options.numsteps
 	if (numsteps == None):
 		numsteps = 3 
