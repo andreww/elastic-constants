@@ -17,25 +17,37 @@ import numpy as np
 
 version = 0.1
 
-def latexCij(Cij, eCij, outputfile):
+def latexCij(Cij, eCij, outputfile, nt=False):
 
 	f = open(outputfile,"w")
 	for i in range(6):
 		for j in range(i,6):
 			if ((Cij[i,j] != 0.0) and (eCij[i,j] != 0.0)):
-				f.write("c$_{{{0}{1}}}$ & {2:5.1f}$\pm${3:3.1f} \\\\ \n".format(i+1,j+1,Cij[i,j],eCij[i,j]))
+				if (nt):
+					f.write("c$_{{{0}{1}}}$ & {2:5.1f}$\pm${3:3.1f}  \n".format(i+1,j+1,Cij[i,j],eCij[i,j]))
+				else:
+					f.write("c$_{{{0}{1}}}$ & {2:5.1f}$\pm${3:3.1f} \\\\ \n".format(i+1,j+1,Cij[i,j],eCij[i,j]))
 	f.write(" & \\\\ \n")
 
 	(vB, rB, vG, rG, hB, hG, evB, erB, evG, erG, ehB, ehG) = polyCij(Cij, eCij)
-	f.write("B^v & {0:5.1f}$\pm${1:3.1f} \\\\ \n".format(vB, evB))
-	f.write("B^r & {0:5.1f}$\pm${1:3.1f} \\\\ \n".format(rB, erB))
-	f.write("B^{{vrh}} & {0:5.1f}$\pm${1:3.1f} \\\\ \n".format(hB, ehB))
-	f.write("G^v & {0:5.1f}$\pm${1:3.1f} \\\\ \n".format(vG, evG))
-	f.write("G^r & {0:5.1f}$\pm${1:3.1f} \\\\ \n".format(rG, erG))
-	f.write("G^{{vrh}} & {0:5.1f}$\pm${1:3.1f} \\\\ \n".format(hG, ehG))
-	f.write(" & \\\\ \n")
-
-	f.write("A$_U$ & {0:5.4f} \\\\ \n".format(uAniso(Cij)))
+	if (nt):
+		f.write("B^v & {0:5.1f}$\pm${1:3.1f}   \n".format(vB, evB))
+		f.write("B^r & {0:5.1f}$\pm${1:3.1f}   \n".format(rB, erB))
+		f.write("B^{{vrh}} & {0:5.1f}$\pm${1:3.1f}   \n".format(hB, ehB))
+		f.write("G^v & {0:5.1f}$\pm${1:3.1f}    \n".format(vG, evG))
+		f.write("G^r & {0:5.1f}$\pm${1:3.1f}  \n".format(rG, erG))
+		f.write("G^{{vrh}} & {0:5.1f}$\pm${1:3.1f}   \n".format(hG, ehG))
+		f.write(" & \\\\ \n")
+		f.write("A$_U$ & {0:5.4f}  \n".format(uAniso(Cij)))
+	else:
+		f.write("B^v & {0:5.1f}$\pm${1:3.1f} \\\\ \n".format(vB, evB))
+		f.write("B^r & {0:5.1f}$\pm${1:3.1f} \\\\ \n".format(rB, erB))
+		f.write("B^{{vrh}} & {0:5.1f}$\pm${1:3.1f} \\\\ \n".format(hB, ehB))
+		f.write("G^v & {0:5.1f}$\pm${1:3.1f} \\\\ \n".format(vG, evG))
+		f.write("G^r & {0:5.1f}$\pm${1:3.1f} \\\\ \n".format(rG, erG))
+		f.write("G^{{vrh}} & {0:5.1f}$\pm${1:3.1f} \\\\ \n".format(hG, ehG))
+		f.write(" & \\\\ \n")
+		f.write("A$_U$ & {0:5.4f} \\\\ \n".format(uAniso(Cij)))
 	f.close()
 
 	return None
