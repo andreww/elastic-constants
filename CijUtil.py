@@ -60,7 +60,26 @@ def txtCij(Cij, filename):
 		for j in range(i,6):
 			f.write("{0:5.1f} ".format(Cij[i,j]))
         f.write("\n")
-	
+
+def CijStability(Cij):
+	"""Check that the elastic constants matrix is positive
+	definite - i.e. that the structure is stable to small 
+	strains. This is done by finding the eigenvalues by 
+	diagonalization and checking that they are all positive.
+	See Born & Huang, "Dynamical Theory of Crystal Lattices"
+	(1954) page 141."""
+
+	stable = False
+	(eigenvalues, eigenvectors) = np.linalg.eig(Cij)
+        if (np.amin(eigenvalues) > 0.0):
+		stable = True
+	else:
+		print "Crystal not stable to small strains"
+		print "(Cij not positive definite)"
+		print "Eigenvalues: " + str(eigenvalues)
+
+	return stable
+    	
 
 def invertCij(Cij, eCij):
         """Given a square matrix and a square matrix of the errors
@@ -210,3 +229,4 @@ if __name__ == '__main__':
         print "\n                      Voigt       Reuss       Hill"
         print format % ("Bulk Modulus", voigtB, reussB, hillB)
         print format % ("Shear Modulus", voigtG, reussG, hillG)
+        
