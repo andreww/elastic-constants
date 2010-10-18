@@ -244,6 +244,44 @@ def uAniso(Cij,eCij):
                   (np.sqrt((evB/voigtB)**2 + (erB/reussB)**2)*(voigtB/reussB))**2)
     return (uA, euA)
 
+def youngsmod(Cij, eCij=np.zeros((6,6))):
+    """Returns the Young's moduli, Poission ratio 
+    and errors. Young's moduli is the ratio of tensile
+    stress to tensile strain. Poission's ratios are ratio
+    of tensile elongation and transverse contraction. """
+    (sij, esij, covsij) = invertCij(Cij, eCij)
+    youngX = 1/sij[0,0]
+    youngY = 1/sij[1,1]
+    youngZ = 1/sij[2,2]
+
+    eyoungX = (esij[0,0]/sij[0,0])*youngX
+    eyoungY = (esij[1,1]/sij[1,1])*youngY
+    eyoungZ = (esij[2,2]/sij[2,2])*youngZ
+
+    poissonXY = -1*sij[0,1]*youngX
+    poissonXZ = -1*sij[0,2]*youngX
+    poissonYX = -1*sij[1,0]*youngY
+    poissonYZ = -1*sij[1,2]*youngY
+    poissonZX = -1*sij[2,0]*youngZ
+    poissonZY = -1*sij[2,1]*youngZ
+
+    epoissonXY = np.sqrt((esij[0,1]/sij[0,1])**2 + (esij[0,0]/sij[0,0])**2 - 
+        2.0*((esij[0,1]*esij[0,0])/(sij[0,1]*sij[0,0]))*covsij[0,1,0,0])*poissonXY
+    epoissonXZ = np.sqrt((esij[0,2]/sij[0,2])**2 + (esij[0,0]/sij[0,0])**2 - 
+        2.0*((esij[0,2]*esij[0,0])/(sij[0,2]*sij[0,0]))*covsij[0,2,0,0])*poissonXZ
+    epoissonYX = np.sqrt((esij[1,0]/sij[1,0])**2 + (esij[1,1]/sij[1,1])**2 - 
+        2.0*((esij[1,0]*esij[1,1])/(sij[1,0]*sij[1,1]))*covsij[1,0,1,1])*poissonYX
+    epoissonYZ = np.sqrt((esij[1,2]/sij[1,2])**2 + (esij[1,1]/sij[1,1])**2 - 
+        2.0*((esij[1,2]*esij[1,1])/(sij[1,2]*sij[1,1]))*covsij[1,2,1,1])*poissonYZ
+    epoissonZX = np.sqrt((esij[2,0]/sij[2,0])**2 + (esij[2,2]/sij[2,2])**2 - 
+        2.0*((esij[2,0]*esij[2,2])/(sij[2,0]*sij[2,2]))*covsij[2,0,2,2])*poissonZX
+    epoissonZY = np.sqrt((esij[2,1]/sij[2,1])**2 + (esij[2,2]/sij[2,2])**2 - 
+        2.0*((esij[2,1]*esij[2,2])/(sij[2,1]*sij[2,2]))*covsij[2,1,2,2])*poissonZY
+
+    return (youngX, youngY, youngZ, eyoungX, eyoungY, eyoungZ,
+           poissonXY, poissonXZ, poissonYX, poissonYZ, poissonZX, poissonZY,
+           epoissonXY, epoissonXZ, epoissonYX, epoissonYZ, epoissonZX, epoissonZY)
+
 if __name__ == '__main__':
     import sys
     inFile = file(sys.argv[1], 'r')

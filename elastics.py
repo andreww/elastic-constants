@@ -598,40 +598,15 @@ def main(input_options, libmode=False):
 	print "  Universal anisotropy index : %6.5f +/- %6.5f" % (CijUtil.uAniso(finalCijMatrix,finalErrors))
 	print "  (Rangnthn and Ostoja-Starzewski, PRL 101, 055504)\n"
 
-	youngX = 1/sij[0,0]
-	youngY = 1/sij[1,1]
-	youngZ = 1/sij[2,2]
-
-	eyoungX = (esij[0,0]/sij[0,0])*youngX	
-	eyoungY = (esij[1,1]/sij[1,1])*youngX	
-	eyoungZ = (esij[2,2]/sij[2,2])*youngX	
+	(youngX, youngY, youngZ, eyoungX, eyoungY, eyoungZ,
+	poissonXY, poissonXZ, poissonYX, poissonYZ, poissonZX, poissonZY,
+	epoissonXY, epoissonXZ, epoissonYX, epoissonYZ, epoissonZX, epoissonZY) = CijUtil.youngsmod(finalCijMatrix,finalErrors)
 	
 	format = "%18s : %11.5f %8s"
 	print "\n                          x           y           z"
 	print "%18s : %11.5f %11.5f %11.5f %6s" % ("Young's Modulus", youngX, youngY, youngZ, units)
 	print "%18s : %11.5f %11.5f %11.5f " % ("      +/-      ", eyoungX, eyoungY, eyoungZ)
 
-	poissonXY = -1*sij[0,1]*youngX
-	poissonXZ = -1*sij[0,2]*youngX
-	poissonYX = -1*sij[1,0]*youngY
-	poissonYZ = -1*sij[1,2]*youngY
-	poissonZX = -1*sij[2,0]*youngZ
-	poissonZY = -1*sij[2,1]*youngZ
-
-	epoissonXY = S.sqrt((esij[0,1]/sij[0,1])**2 + (esij[0,0]/sij[0,0])**2 - 
-			2.0*((esij[0,1]*esij[0,0])/(sij[0,1]*sij[0,0]))*covsij[0,1,0,0])*poissonXY
-	epoissonXZ = S.sqrt((esij[0,2]/sij[0,2])**2 + (esij[0,0]/sij[0,0])**2 - 
-			2.0*((esij[0,2]*esij[0,0])/(sij[0,2]*sij[0,0]))*covsij[0,2,0,0])*poissonXZ
-	epoissonYX = S.sqrt((esij[1,0]/sij[1,0])**2 + (esij[1,1]/sij[1,1])**2 - 
-			2.0*((esij[1,0]*esij[1,1])/(sij[1,0]*sij[1,1]))*covsij[1,0,1,1])*poissonYX
-	epoissonYZ = S.sqrt((esij[1,2]/sij[1,2])**2 + (esij[1,1]/sij[1,1])**2 - 
-			2.0*((esij[1,2]*esij[1,1])/(sij[1,2]*sij[1,1]))*covsij[1,2,1,1])*poissonYZ
-	epoissonZX = S.sqrt((esij[2,0]/sij[2,0])**2 + (esij[2,2]/sij[2,2])**2 - 
-			2.0*((esij[2,0]*esij[2,2])/(sij[2,0]*sij[2,2]))*covsij[2,0,2,2])*poissonZX
-	epoissonZY = S.sqrt((esij[2,1]/sij[2,1])**2 + (esij[2,2]/sij[2,2])**2 - 
-			2.0*((esij[2,1]*esij[2,2])/(sij[2,1]*sij[2,2]))*covsij[2,1,2,2])*poissonZY
-	
-	
 	print "\n                        xy       xz       yx       yz       zx       zy"
 	format = "%18s :  %6.5f  %6.5f  %6.5f  %6.5f  %6.5f  %6.5f"
 	print format % ("Poisson's Ratios", poissonXY, poissonXZ, poissonYX, poissonYZ, poissonZX, poissonZY)
