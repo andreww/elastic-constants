@@ -1,5 +1,6 @@
 import CijUtil
 import numpy as np
+import numpy.testing as npt
 import unittest
 
 class TestInvertCijFunctions(unittest.TestCase):
@@ -16,21 +17,16 @@ class TestInvertCijFunctions(unittest.TestCase):
         (self.calc_inv, self.calc_err, self.calc_cov) = CijUtil.invertCij(self.inmatrix, self.inerrors)
 
     def test_inverse(self):
-        for i in range(2):
-            for j in range(2):
-                self.assertAlmostEqual(self.calc_inv[i,j], self.true_inv[i,j], 2)
+        npt.assert_array_almost_equal(self.calc_inv, self.true_inv, 3,
+           'Calculated inverse of test matrix is wrong')
 
     def test_inverseErrors(self):
-        for i in range(2):
-            for j in range(2):
-                self.assertAlmostEqual(self.calc_err[i,j], self.true_err[i,j], 4)
+        npt.assert_array_almost_equal(self.calc_err, self.true_err, 5,
+           'Calculated propogated std. errors of test matrix are wrong')
 
     def test_inverseCovar(self):
-        for i in range(2):
-            for j in range(2):
-                for k in range(2):
-                    for l in range(2):
-                        self.assertAlmostEqual(self.calc_cov[i,j,k,l], self.true_cov[i,j,k,l], 7)
+        npt.assert_array_almost_equal(self.calc_cov, self.true_cov,7,
+           'Calculated propogated var-covar matrix of test matrix is wrong')
 
 if __name__ == '__main__':
     unittest.main()
