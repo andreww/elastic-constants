@@ -124,7 +124,7 @@ def get_options(input_options, libmode):
 	   	              help='Number of positive strain magnitudes to impose (defaults to 3)')
 		p.add_option('--strain', '-s', action='store', type='float', dest="strain", \
 		              help='Maximum magnitude of deformation to produced strained cells (defaults to 0.1)')
-		p.add_option('--lattice', action='store', type='int', dest="lattice", \
+		p.add_option('--lattice', '-l',  action='store', type='int', dest="lattice", \
 		              help='Lattice type to set pattern of deformation (extracted from .castep file)')
 		options,arguments = p.parse_args(args=input_options)
 
