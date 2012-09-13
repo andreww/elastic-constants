@@ -13,7 +13,7 @@ import re
 version = 0.1
 
 # regular expression to match the whole of the final cell from a .castep file
-dotcastep_latt_RE = re.compile("""\sBFGS:\sFinal\sConfiguration:\s*\n
+dotcastep_latt_RE = re.compile("""\sBFGS\s*:\sFinal\sConfiguration:\s*\n
             =+\s*\n\s*\n\s+\-+\s*\n\s+Unit\sCell\s*\n\s+\-+\s*\n
 	    \s+Real\sLattice\(A\)\s+Reciprocal\sLattice\(1/A\)\s*\n
             \s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s*\n
@@ -22,7 +22,7 @@ dotcastep_latt_RE = re.compile("""\sBFGS:\sFinal\sConfiguration:\s*\n
           re.VERBOSE)
 
 # Start of the 'final configuration'
-dotcastep_infinal_RE = re.compile("BFGS: Final Configuration:")
+dotcastep_infinal_RE = re.compile("BFGS\s*: Final Configuration:")
 
 # Once inside final configuation, this should only match a line with atoms
 dotcastep_atomline_RE = re.compile("x\s+(\w+)\s+\d+\s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s+x")
