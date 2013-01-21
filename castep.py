@@ -9,6 +9,7 @@ All rights reserved.
 """
 
 import re
+import scipy as S
 
 version = 0.1
 
@@ -106,4 +107,25 @@ def produce_dotcell(seedname, filename, defcell, atoms):
 	inputfile.close
 	outputfile.close
 	return()
-			
+
+	# regular expression which matches the whole stress tensor block from a .castep file
+	stressRE = re.compile("\s\*+\s(?:Symmetrised\s)?Stress\sTensor\s\*+\n.+\n.+?\((\w+)\).+\n.+\n.+\n.+\n\s\*\s+x\s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s+\*\n\s\*\s+y\s+[\+\-]?\d+.\d+\s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s+\*\n\s\*\s+z\s+[\+\-]?\d+.\d+\s+[\+\-]?\d+.\d+\s+([\+\-]?\d+.\d+)\s+\*\n")
+
+def get_stress_dotcastep(filename):
+	"""Extract the stress tensor from a .castep file
+	
+	   Returns a tuple of (<units>, <stress>) where <units>
+	   is a string representing the stress units and 
+	   <stress> is a numpy vector of the elements of the 
+	   stress tensor in the order s(1,1), s(2,2), s(3,3)
+	   s(3,2), s(3,1), s(2,1).
+	"""
+	dotCastep = open(filename,"r")
+	stressData = stressRE.findall(dotCastep.read())[0]
+	dotCastep.close()
+	units = stressData[0]
+	stress = S.array([float(stressData[1]),float(stressData[4]),
+                          float(stressData[6]),float(stressData[5]),
+                          float(stressData[3]),float(stressData[2])])
+	return(units, stress)
+
