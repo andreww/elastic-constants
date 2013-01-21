@@ -1,0 +1,11 @@
+(1) Do a full geometry optimization. Must be accurate with fine tolarances 
+* How accurate
+* Symmetry
+(2) Set up the strained cells.
+* How many strains
+* Choosing the symmetry
+* How big should the strains be?
+(3) Analysis
+* Check fits
+* What does output mean?
+

@@ -1,0 +1,5 @@
+Check what the orientation of the lattice vectors should be w.r.t. the strains and cart axes. Probably should convert to _ABC then back to _CART...
+Test (can I test with GULP? - yes, but stresses are in the wrong units)
+Seperate castep specific file handling in both scripts from genric maths
+Investigate 'reuse' eather a .check or .castep_bin file. Note, I've run into some cases of these failing on hector.
+Correct handling of errors (wrt the __append... functions).
