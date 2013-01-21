@@ -14,6 +14,7 @@ import re
 import optparse
 import scipy as S
 import CijUtil
+import castep
 
 version = 1
 	
@@ -149,9 +150,6 @@ def main(input_options, libmode=False):
 	latticeTypes = {0:"Unknown", 1:"Triclinic", 2:"Monoclinic", 3:"Orthorhombic", \
 		4:"Tetragonal", 5:"Cubic", 6:"Trigonal-low", 7:"Trigonal-high/Hexagonal"}
 
-	# regular expression which matches the whole stress tensor block from a .castep file
-	stressRE = re.compile("\s\*+\s(?:Symmetrised\s)?Stress\sTensor\s\*+\n.+\n.+?\((\w+)\).+\n.+\n.+\n.+\n\s\*\s+x\s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s+\*\n\s\*\s+y\s+[\+\-]?\d+.\d+\s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s+\*\n\s\*\s+z\s+[\+\-]?\d+.\d+\s+[\+\-]?\d+.\d+\s+([\+\-]?\d+.\d+)\s+\*\n")
-
 	# Get strain tensors
 	seedname = arguments[0]
 
@@ -220,19 +218,14 @@ def main(input_options, libmode=False):
 				strain = S.row_stack((strain,S.array([float(line1[0]),float(line2[1]),float(line3[2]),2*float(line2[2]),2*float(line1[2]),2*float(line1[1])])))
 		
 			# now get corresponding stress data from .castep
-			dotCastep = open(seedname+"_cij__"+str(patt+1)+"__"+str(a+1)+".castep","r")	
-			stressData = stressRE.findall(dotCastep.read())[0]
-			dotCastep.close()
-		
-			units = stressData[0]
+                        (units, thisStress) = castep.get_stress_dotcastep(seedname+
+				"_cij__"+str(patt+1)+"__"+str(a+1)+".castep")
 	
 			# again, top right triangle
 			if a == 0:
-				stress = S.array([float(stressData[1]),float(stressData[4]),float(stressData[6]),float(stressData[5]),float(stressData[3]),float(stressData[2])])
+				stress = thisStress
 			else:
-				stress = S.row_stack((stress,S.array([float(stressData[1]),float(stressData[4]),float(stressData[6]),float(stressData[5]),float(stressData[3]),float(stressData[2])])))		
-			
-
+				stress = S.row_stack(thisStress)
 	
 
 		"""
