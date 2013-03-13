@@ -225,7 +225,7 @@ def main(input_options, libmode=False):
 			if a == 0:
 				stress = thisStress
 			else:
-				stress = S.row_stack(thisStress)
+				stress = S.row_stack((stress,thisStress))
 	
 
 		"""
