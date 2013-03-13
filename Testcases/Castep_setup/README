@@ -1,0 +1,11 @@
+
+
+cd Input
+
+python ../../../generate_strain.py -s 0.1 jadeite_4_30_GPa
+
+cd ..
+
+diff Input Output
+
+rm Input/*_cij__* Input/*.cijdat

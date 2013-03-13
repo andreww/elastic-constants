@@ -1,0 +1,16 @@
+task : geometryoptimization
+fix_occupancy : true
+opt_strategy : speed
+geom_max_iter : 300
+geom_energy_tol : 2.0e-7 eV
+geom_force_tol : 0.001 ev/Ang
+geom_stress_tol : 0.001 GPa
+elec_energy_tol : 1.0e-8 eV
+xc_functional : PBE
+cut_off_energy :   700.0
+max_scf_cycles :      100
+calculate_stress : true
+popn_calculate : true
+num_dump_cycles : 0
+num_backup_iter : 1 
+
