@@ -1,0 +1,16 @@
+A functional test of the Castep analysis script
+
+This should be put under the python test harness, but in the
+meantime:
+
+Do: 
+
+python ../../elastics.py jadeite_4_30GPa
+
+This will run the analysis script and produce jadeite_4_30GPa_cij.txt
+
+To check the analysis worked compare this with jadeite_4_30GPa_cij.txt_REFERENCE
+
+Note - this is from my PCM paper on jadeite and diopside
+
+
