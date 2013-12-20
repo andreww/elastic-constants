@@ -25,6 +25,7 @@ def PointGroup2StrainPat(pointgroup):
 	and in the International Tables) to a number representing 
 	the needed strain pattern.
 	"""
+        supcode = 0
 	if (pointgroup < 1):
 		print "Point group number " + str(pointgroup) + " not recognized.\n"
 		sys.exit(1)
@@ -46,6 +47,7 @@ def PointGroup2StrainPat(pointgroup):
 	elif (pointgroup <= 20):
 		# Trigonal-High
 		patt = 7
+                supcode = 1
 	elif (pointgroup <= 27):
 		# Hexagonal
 		patt = 7
@@ -55,9 +57,9 @@ def PointGroup2StrainPat(pointgroup):
 	else:
 		print "Point group number " + str(pointgroup) + " not recognized.\n"
 		sys.exit(1)
-	return patt
+	return patt, supcode
 
-def GetStrainPatterns(code):
+def GetStrainPatterns(code, supcode):
 	"""
 	Given a code number for the crystal symmetry, 
 	returns a list of strain patterns needed for
@@ -108,6 +110,9 @@ def GetStrainPatterns(code):
 		# I suspect I have to rotate lattice for trig high?
 		pattern = [[0.0, 0.0, 1.0, 0.0, 0.0, 0.0],
 		           [1.0, 0.0, 0.0, 1.0, 0.0, 0.0]]
+		if supcode == 1:
+			pattern = [[1.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+			           [0.0, 0.0, 1.0, 1.0, 0.0, 0.0]]
 
 	return pattern	
 
@@ -220,7 +225,7 @@ def main(input_options, libmode=False):
 			sys.exit(1)
 		else:
 			# Use the value from .castep
-			latticeCode = PointGroup2StrainPat(pointgroup)
+			latticeCode, supcode = PointGroup2StrainPat(pointgroup)
 	else:
 		if (pointgroup == None):
 			# Noting in .castep - use users choice
@@ -228,7 +233,7 @@ def main(input_options, libmode=False):
 		else:
 			# Use users choice, but check and warn
 			latticeCode = options.lattice
-			if (latticeCode != PointGroup2StrainPat(pointgroup)):
+			if (latticeCode != PointGroup2StrainPat(pointgroup)[0]):
 				print "WARNING: User supplied lattice code is inconsistant with the point group\n"
 				print "         found by CASTEP. Using user supplied lattice code.\n"
 		
@@ -238,7 +243,7 @@ def main(input_options, libmode=False):
 	print "Lattce vectors:  %7f %7f %7f " % (cell[0][0], cell[0][1], cell[0][2])
 	print "                 %7f %7f %7f " % (cell[1][0], cell[1][1], cell[1][2])
 	print "                 %7f %7f %7f \n " % (cell[2][0], cell[2][1], cell[2][2])
-	patterns = GetStrainPatterns(latticeCode)
+	patterns = GetStrainPatterns(latticeCode, supcode)
 	numStrainPatterns = len(patterns)
 	print "Lattice type is ", latticeTypes[latticeCode] 
 	print "Number of patterns: "+ str(numStrainPatterns) +"\n"

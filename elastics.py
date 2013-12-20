@@ -351,7 +351,7 @@ def main(input_options, libmode=False):
 					finalCijs[6], errors[6] = __fit(2,1)                # fit C21
 					finalCijs[7], errors[7] = __fit(3,1)                # fit C31
 					finalCijs[8], errors[8] = __fit(4,1)                # fit C41
-					finalCijs[9], errors[9] = __fit(5,1)                # fit C51
+					# Should be zero? finalCijs[9], errors[9] = __fit(5,1)                # fit C51
 					
 					
 			elif S.all(strainsUsed.transpose() == S.array([[0.0, 0.0, 1.0, 1.0, 0.0, 0.0]])):	
@@ -545,6 +545,19 @@ def main(input_options, libmode=False):
 		# for these systems, C66 is calculated as a combination of the other Cijs.
 		finalCijs[5] = 0.5*(finalCijs[0]-finalCijs[6])
 		errors[5] = S.sqrt(0.25*(errors[0]**2+errors[6]**2))
+                if finalCijs[8] != 0.0: # This is trigonal
+			# See table in Appendix E of Nye's book
+ 			finalCijs[12] = -1.0*finalCijs[8] # C24 = -C14
+                        errors[12] = errors[8]
+			finalCijs[20] = 0.5*finalCijs[8] # C56 = 1/2 C14
+                        errors[20] = S.sqrt(0.25*errors[8]**2)
+			if symmetryType == "Trigonal-low":
+				# Another relation for these three point groups
+				finalCijs[13] = -1.0*finalCijs[9] # C25 = -C15
+                                errors[13] = errors[9]
+				finalCijs[19] = 0.5*finalCijs[13] # C46 = 1/2 C25 (Not C15!)
+                        	errors[20] = S.sqrt(0.25*errors[13]**2)
+				
 	
 	c = cMatrix(symmetryType,TetrHigh)
 	
