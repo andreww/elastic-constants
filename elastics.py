@@ -53,16 +53,16 @@ def main(input_options, libmode=False):
 					 [7,  1,  8, -9,  0,  0],
 					 [8,  8,  3,  0,  0,  0],
 					 [9, -9,  0,  4,  0,  0],
-					 [0,  0,  0,  0,  4, 21],
-					 [0,  0,  0,  0, 21,  6]])
+					 [0,  0,  0,  0,  4,  9],
+					 [0,  0,  0,  0,  9,  6]])
 
 		elif symmetryType == "Trigonal-low":
-			return S.matrix([[ 1,   7, 8,  9,  10,  0],
-					 [ 7,   1, 8, -9, -10,  0],
-					 [ 8,   8, 3,  0,   0,  0],
-					 [ 9,  -9, 0,  4,   0, 20],
-					 [10, -10, 0,  0,   4, 21],
-					 [ 0,   0, 0, 20,  21,  6]])
+			return S.matrix([[ 1,   7, 8,   9,  10,   0],
+					 [ 7,   1, 8,  -9, -10,   0],
+					 [ 8,   8, 3,   0,   0,   0],
+					 [ 9,  -9, 0,   4,   0, -10],
+					 [10, -10, 0,   0,   4,   9],
+					 [ 0,   0, 0, -10,   9,   6]])
 
 		elif symmetryType == "Tetragonal":
 			if TetrHigh == "-1":
@@ -545,16 +545,6 @@ def main(input_options, libmode=False):
 		# for these systems, C66 is calculated as a combination of the other Cijs.
 		finalCijs[5] = 0.5*(finalCijs[0]-finalCijs[6])
 		errors[5] = S.sqrt(0.25*(errors[0]**2+errors[6]**2))
-                if finalCijs[8] != 0.0: # This is trigonal
-			# See table in Appendix E of Nye's book
-                        # but note that C24 = -C14 is delt with below by cMatrix tables
-			finalCijs[20] = 0.5*finalCijs[8] # C56 = 1/2 C14
-                        errors[20] = S.sqrt(0.25*errors[8]**2)
-			if symmetryType == "Trigonal-low":
-				# Another relation for these three point groups
-				finalCijs[19] = -0.5*finalCijs[9] # C46 = 1/2 C25 (= -1/2 C15)
-                        	errors[19] = S.sqrt(0.25*errors[9]**2)
-				
 	
 	c = cMatrix(symmetryType,TetrHigh)
 	
