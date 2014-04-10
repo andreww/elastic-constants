@@ -149,6 +149,7 @@ def cellABC2cellCART (a, b, c, alp, bet, gam, Convention=1):
                 sina = 1.0
       		cosa = 0.0
 	else:
+                sina = np.sin(np.radians(alp))
       		cosa = np.cos(np.radians(alp))
 	if (bet == 90.0):
 		sinb = 1.0
@@ -166,12 +167,12 @@ def cellABC2cellCART (a, b, c, alp, bet, gam, Convention=1):
         c_y = 0.0
         c_z = c
 
-	b_z = 0.0
-	b_x = b*cosg
-	b_y = b*sing
+	b_x = 0.0
+	b_y = b*sina
+	b_z = b*cosa
 
         a_z = a*cosb
-        a_y = a*(cosa - cosg*cosb)/sing
+        a_y = a*(cosg - cosa*cosb)/sina
 	trm1 = a_y/a
 	a_x = a*np.sqrt(1.0 - cosb**2 - trm1**2)
 
