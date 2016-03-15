@@ -43,7 +43,7 @@ def latexCij(Cij, eCij, outputfile, nt=False):
         f.write("G^r & {0:5.1f}$\pm${1:3.1f}  \n".format(rG, erG))
         f.write("G^{{vrh}} & {0:5.1f}$\pm${1:3.1f}   \n".format(hG, ehG))
         f.write(" & \\\\ \n")
-        f.write("A$_U$ & {0:5.4f}$\pm${1:3.1f}  \n".format(Ua, eUa))
+        f.write("A$_U$ & {0:5.2f}$\pm${1:4.2f}  \n".format(Ua, eUa))
     else:
         f.write("B^v & {0:5.1f}$\pm${1:3.1f} \\\\ \n".format(vB, evB))
         f.write("B^r & {0:5.1f}$\pm${1:3.1f} \\\\ \n".format(rB, erB))
@@ -52,7 +52,7 @@ def latexCij(Cij, eCij, outputfile, nt=False):
         f.write("G^r & {0:5.1f}$\pm${1:3.1f} \\\\ \n".format(rG, erG))
         f.write("G^{{vrh}} & {0:5.1f}$\pm${1:3.1f} \\\\ \n".format(hG, ehG))
         f.write(" & \\\\ \n")
-        f.write("A$_U$ & {0:5.4f}$\pm${1:3.1f} \\\\ \n".format(Ua, eUa))
+        f.write("A$_U$ & {0:5.2f}$\pm${1:4.2f} \\\\ \n".format(Ua, eUa))
     f.close()
 
     return None
