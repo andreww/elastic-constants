@@ -26,12 +26,15 @@ def latexCij(Cij, eCij, outputfile, nt=False):
         for j in range(i,6):
             if ((Cij[i,j] != 0.0) and (eCij[i,j] != 0.0)):
                 if (nt):
-                    f.write("c$_{{{0}{1}}}$ & {2:5.1f}$\pm${3:3.1f}  \n".
-                      format(i+1,j+1,Cij[i,j],eCij[i,j]))
+                    f.write("& {0:5.1f}$\pm${1:3.1f}  \n".
+                      format(Cij[i,j],eCij[i,j]))
                 else:
                     f.write("c$_{{{0}{1}}}$ & {2:5.1f}$\pm${3:3.1f} \\\\ \n".
                       format(i+1,j+1,Cij[i,j],eCij[i,j]))
-    f.write(" & \\\\ \n")
+    if (nt):
+        f.write(" & \n")
+    else:
+        f.write(" & \\\\ \n")
 
     (vB, rB, vG, rG, hB, hG, evB, erB, evG, erG, ehB, ehG) = polyCij(Cij, eCij)
     (Ua, eUa) = uAniso(Cij, eCij)
@@ -42,7 +45,7 @@ def latexCij(Cij, eCij, outputfile, nt=False):
         f.write("& {0:5.1f}$\pm${1:3.1f}    \n".format(vG, evG))
         f.write("& {0:5.1f}$\pm${1:3.1f}  \n".format(rG, erG))
         f.write("& {0:5.1f}$\pm${1:3.1f}   \n".format(hG, ehG))
-        f.write("&  \\\\ \n")
+        f.write("&  \n")
         f.write("& {0:5.2f}$\pm${1:4.2f}  \n".format(Ua, eUa))
     else:
         f.write("B$^v$ & {0:5.1f}$\pm${1:3.1f} \\\\ \n".format(vB, evB))
