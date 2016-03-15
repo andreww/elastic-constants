@@ -34,6 +34,7 @@ def latexCij(Cij, eCij, outputfile, nt=False):
     f.write(" & \\\\ \n")
 
     (vB, rB, vG, rG, hB, hG, evB, erB, evG, erG, ehB, ehG) = polyCij(Cij, eCij)
+    (Ua, eUa) = uAniso(Cij, eCij)
     if (nt):
         f.write("B^v & {0:5.1f}$\pm${1:3.1f}   \n".format(vB, evB))
         f.write("B^r & {0:5.1f}$\pm${1:3.1f}   \n".format(rB, erB))
@@ -42,7 +43,7 @@ def latexCij(Cij, eCij, outputfile, nt=False):
         f.write("G^r & {0:5.1f}$\pm${1:3.1f}  \n".format(rG, erG))
         f.write("G^{{vrh}} & {0:5.1f}$\pm${1:3.1f}   \n".format(hG, ehG))
         f.write(" & \\\\ \n")
-        f.write("A$_U$ & {0:5.4f}  \n".format(uAniso(Cij)))
+        f.write("A$_U$ & {0:5.4f}$\pm${1:3.1f}  \n".format(Ua, eUa))
     else:
         f.write("B^v & {0:5.1f}$\pm${1:3.1f} \\\\ \n".format(vB, evB))
         f.write("B^r & {0:5.1f}$\pm${1:3.1f} \\\\ \n".format(rB, erB))
@@ -51,7 +52,7 @@ def latexCij(Cij, eCij, outputfile, nt=False):
         f.write("G^r & {0:5.1f}$\pm${1:3.1f} \\\\ \n".format(rG, erG))
         f.write("G^{{vrh}} & {0:5.1f}$\pm${1:3.1f} \\\\ \n".format(hG, ehG))
         f.write(" & \\\\ \n")
-        f.write("A$_U$ & {0:5.4f} \\\\ \n".format(uAniso(Cij)))
+        f.write("A$_U$ & {0:5.4f}$\pm${1:3.1f} \\\\ \n".format(Ua, eUa))
     f.close()
 
     return None
