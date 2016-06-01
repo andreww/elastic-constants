@@ -14,7 +14,7 @@ import scipy as S
 version = 0.1
 
 # regular expression to match the whole of the final cell from a .castep file
-dotcastep_latt_RE = re.compile("""\sBFGS\s*:\sFinal\sConfiguration:\s*\n
+dotcastep_latt_RE = re.compile("""\sL?BFGS\s*:\sFinal\sConfiguration:\s*\n
             =+\s*\n\s*\n\s+\-+\s*\n\s+Unit\sCell\s*\n\s+\-+\s*\n
 	    \s+Real\sLattice\(A\)\s+Reciprocal\sLattice\(1/A\)\s*\n
             \s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s*\n
