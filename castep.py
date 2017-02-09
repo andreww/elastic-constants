@@ -129,3 +129,29 @@ def get_stress_dotcastep(filename):
                           float(stressData[3]),float(stressData[2])])
 	return(units, stress)
 
+
+def parse_dotcell(filename):
+        """Extract atoms and cell params from a .cell file"""
+        lattice = []
+        atoms = []
+        with open(filename, 'r') as f:
+            inlattice = False
+            inatoms = False
+            for line in f:
+                if line.lower().startswith("%block lattice_cart"):
+                    inlattice = True
+                elif line.lower().startswith("%endblock lattice_cart"):
+                    inlattice = False
+                elif line.lower().startswith("%block positions_frac"):
+                    inatoms = False
+                elif line.lower().startswith("%endblock positions_frac"):
+                    inatoms = False
+                elif inlattice:
+                    vals = line.split()
+                    lattice.append([float(vals[0]), float(vals[1]), float(vals[2])])
+                elif inatoms:
+                    vals = line.split()
+                    atoms.append([vals[0], float(vals[1]), float(vals[2]), float(vals[3])])
+        # FIXME: check the output!
+	return (lattice, atoms)
+            

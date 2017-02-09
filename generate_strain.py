@@ -131,6 +131,8 @@ def get_options(input_options, libmode):
 		              help='Maximum magnitude of deformation to produced strained cells (defaults to 0.1)')
 		p.add_option('--lattice', '-l',  action='store', type='int', dest="lattice", \
 		              help='Lattice type to set pattern of deformation (extracted from .castep file)')
+                p.add_option('--use-cell', '-c', action='store', type='string', dest='incellfile',\
+                              help='use a cell file for unstrained geometry')
 		options,arguments = p.parse_args(args=input_options)
 
 	return options, arguments
@@ -200,12 +202,16 @@ def main(input_options, libmode=False):
 	# deal with options
 	options, arguments = get_options(input_options, libmode)
 	seedname = arguments[0]
-	
-	(cell,pointgroup,atoms) = castep.parse_dotcastep(seedname)
+        pointgroup = None
+
+        if options.incellfile is None:	
+	    (cell,pointgroup,atoms) = castep.parse_dotcastep(seedname)
+        else:
+            cell, atoms = castep.parse_dotcell(options.incellfile)
+
 	# Re-align lattice vectors on cartisian system
 	a, b, c, al, be, ga = cellCART2cellABC(cell)
 	cell = cellABC2cellCART(a, b, c, al, be, ga)
-
 
 	# Not sure why the lattice types are enumerated like this, but this is how .cijdat does it...
 	latticeTypes = {0:"Unknown", 1:"Triclinic", 2:"Monoclinic", 3:"Orthorhombic", \
@@ -231,6 +237,7 @@ def main(input_options, libmode=False):
 		if (pointgroup == None):
 			# Noting in .castep - use users choice
 			latticeCode = options.lattice
+                        supcode = 0 # FIXME: should clean this up so user provides point group or something.
 		else:
 			# Use users choice, but check and warn
 			latticeCode = options.lattice
