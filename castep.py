@@ -143,7 +143,7 @@ def parse_dotcell(filename):
                 elif line.lower().startswith("%endblock lattice_cart"):
                     inlattice = False
                 elif line.lower().startswith("%block positions_frac"):
-                    inatoms = False
+                    inatoms = True
                 elif line.lower().startswith("%endblock positions_frac"):
                     inatoms = False
                 elif inlattice:
