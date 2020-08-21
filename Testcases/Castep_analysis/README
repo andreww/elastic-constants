@@ -5,7 +5,7 @@ meantime:
 
 Do: 
 
-python ../../elastics.py jadeite_4_30GPa
+python ../../elastics.py jadeite_4_30_GPa
 
 This will run the analysis script and produce jadeite_4_30GPa_cij.txt
 
