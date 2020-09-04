@@ -12,6 +12,7 @@ polyCij(Cij): Given an elastic constants matrix for a single crystal,
 Copyright (c) 2010 Andrew Walker. All rights reserved.
 
 """
+from __future__ import print_function
 
 import numpy as np
 
@@ -84,9 +85,9 @@ def CijStability(Cij):
     if (np.amin(eigenvalues) > 0.0):
         stable = True
     else:
-        print "Crystal not stable to small strains"
-        print "(Cij not positive definite)"
-        print "Eigenvalues: " + str(eigenvalues)
+        print("Crystal not stable to small strains")
+        print("(Cij not positive definite)")
+        print("Eigenvalues: " + str(eigenvalues))
 
     return stable
         
@@ -120,11 +121,11 @@ def invertCij(Cij, eCij):
     # Assuming we have a rank 2 square array
     # of the same size for input array. 
     if (np.ndim(Cij) != 2):
-        raise ValueError, "Matrix must be rank 2"
+        raise ValueError("Matrix must be rank 2")
     if (np.shape(Cij)[0] != np.shape(Cij)[1]):
-        raise ValueError, "Matrix must be square"
+        raise ValueError("Matrix must be square")
     if (np.shape(Cij) != np.shape(eCij)):
-        raise ValueError, "Matrix and error matrix must have same rank and shape"
+        raise ValueError("Matrix and error matrix must have same rank and shape")
 
     # Calculate the inverse using numpy
     Sij = np.linalg.inv(Cij)
@@ -290,12 +291,12 @@ if __name__ == '__main__':
     import sys
     inFile = file(sys.argv[1], 'r')
     Cij_in = np.loadtxt(inFile)
-    print "Input matrix:"
-    print  np.array2string(Cij_in,max_line_width=130,suppress_small=True)
+    print("Input matrix:")
+    print (np.array2string(Cij_in,max_line_width=130,suppress_small=True))
     (voigtB, reussB, voigtG, reussG, hillB, hillG, 
                        dum, dum, dum, dum, dum, dum) = polyCij(Cij_in)
     format = "%16s : %11.5f %11.5f %11.5f"
-    print "\n                      Voigt       Reuss       Hill"
-    print format % ("Bulk Modulus", voigtB, reussB, hillB)
-    print format % ("Shear Modulus", voigtG, reussG, hillG)
+    print("\n                      Voigt       Reuss       Hill")
+    print(format % ("Bulk Modulus", voigtB, reussB, hillB))
+    print(format % ("Shear Modulus", voigtG, reussG, hillG))
         
