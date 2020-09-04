@@ -181,7 +181,7 @@ def main(input_options, libmode=False):
 		colourDict = {0: '#BAD0EF', 1:'#FFCECE', 2:'#BDF4CB', 3:'#EEF093',4:'#FFA4FF',5:'#75ECFD'}
 
 		for index1 in range(6):
-		    for index2 in range(6):
+			for index2 in range(6):
 				# position this plot in a 6x6 grid
 				sp = P.subplot(6,6,6*(index1)+index2+1)
 				sp.set_axis_off()
@@ -220,7 +220,7 @@ def main(input_options, libmode=False):
 				strain = S.row_stack((strain,S.array([float(line1[0]),float(line2[1]),float(line3[2]),2*float(line2[2]),2*float(line1[2]),2*float(line1[1])])))
 		
 			# now get corresponding stress data from .castep
-                        (units, thisStress) = castep.get_stress_dotcastep(seedname+
+			(units, thisStress) = castep.get_stress_dotcastep(seedname+
 				"_cij__"+str(patt+1)+"__"+str(a+1)+".castep")
 	
 			# again, top right triangle
