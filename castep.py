@@ -14,7 +14,7 @@ import scipy as S
 version = 0.1
 
 # regular expression to match the whole of the final cell from a .castep file
-dotcastep_latt_RE = re.compile("""\sL?BFGS\s*:\sFinal\sConfiguration:\s*\n
+dotcastep_latt_RE = re.compile(r"""\sL?BFGS\s*:\sFinal\sConfiguration:\s*\n
             =+\s*\n\s*\n\s+\-+\s*\n\s+Unit\sCell\s*\n\s+\-+\s*\n
 	    \s+Real\sLattice\(A\)\s+Reciprocal\sLattice\(1/A\)\s*\n
             \s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s*\n
@@ -23,13 +23,13 @@ dotcastep_latt_RE = re.compile("""\sL?BFGS\s*:\sFinal\sConfiguration:\s*\n
           re.VERBOSE)
 
 # Start of the 'final configuration'
-dotcastep_infinal_RE = re.compile("BFGS\s*: Final Configuration:")
+dotcastep_infinal_RE = re.compile(r"BFGS\s*: Final Configuration:")
 
 # Once inside final configuation, this should only match a line with atoms
-dotcastep_atomline_RE = re.compile("x\s+(\w+)\s+\d+\s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s+x")
+dotcastep_atomline_RE = re.compile(r"x\s+(\w+)\s+\d+\s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s+x")
 
 # Get the point group number
-dotcastep_poinggroup_RE = re.compile("^\s+Point group of crystal =\s+([\+\-]?\d+):")
+dotcastep_poinggroup_RE = re.compile(r"^\s+Point group of crystal =\s+([\+\-]?\d+):")
 
 def parse_dotcastep(seedname):
 	"""
@@ -65,10 +65,10 @@ def parse_dotcastep(seedname):
 
 # Regular expressions to match a lattice block in a castep .cell file. Note that these
 # can be of the form %block lattice_abc or %block lattice_cart and are case insensitive
-dotcell_lattice_start_RE = re.compile("^\s*%BLOCK\s+LATTICE_(?:CART|ABC)",re.IGNORECASE)
-dotcell_lattice_end_RE = re.compile("^\s*%ENDBLOCK\s+LATTICE_(?:CART|ABC)",re.IGNORECASE)
-dotcell_atoms_start_RE = re.compile("^\s*%BLOCK\s+POSITIONS_(?:FRAC|ABS)", re.IGNORECASE)
-dotcell_atoms_end_RE = re.compile("^\s*%ENDBLOCK\s+POSITIONS_(?:FRAC|ABS)", re.IGNORECASE)
+dotcell_lattice_start_RE = re.compile(r"^\s*%BLOCK\s+LATTICE_(?:CART|ABC)",re.IGNORECASE)
+dotcell_lattice_end_RE = re.compile(r"^\s*%ENDBLOCK\s+LATTICE_(?:CART|ABC)",re.IGNORECASE)
+dotcell_atoms_start_RE = re.compile(r"^\s*%BLOCK\s+POSITIONS_(?:FRAC|ABS)", re.IGNORECASE)
+dotcell_atoms_end_RE = re.compile(r"^\s*%ENDBLOCK\s+POSITIONS_(?:FRAC|ABS)", re.IGNORECASE)
 
 def produce_dotcell(seedname, filename, defcell, atoms):
 	"""
@@ -109,7 +109,7 @@ def produce_dotcell(seedname, filename, defcell, atoms):
 	return()
 
 # regular expression which matches the whole stress tensor block from a .castep file
-stressRE = re.compile("\s\*+\s(?:Symmetrised\s)?Stress\sTensor\s\*+\n.+\n.+?\((\w+)\).+\n.+\n.+\n.+\n\s\*\s+x\s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s+\*\n\s\*\s+y\s+[\+\-]?\d+.\d+\s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s+\*\n\s\*\s+z\s+[\+\-]?\d+.\d+\s+[\+\-]?\d+.\d+\s+([\+\-]?\d+.\d+)\s+\*\n")
+stressRE = re.compile(r"\s\*+\s(?:Symmetrised\s)?Stress\sTensor\s\*+\n.+\n.+?\((\w+)\).+\n.+\n.+\n.+\n\s\*\s+x\s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s+\*\n\s\*\s+y\s+[\+\-]?\d+.\d+\s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s+\*\n\s\*\s+z\s+[\+\-]?\d+.\d+\s+[\+\-]?\d+.\d+\s+([\+\-]?\d+.\d+)\s+\*\n")
 
 def get_stress_dotcastep(filename):
 	"""Extract the stress tensor from a .castep file
