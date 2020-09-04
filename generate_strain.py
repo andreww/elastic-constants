@@ -9,6 +9,8 @@ for analysis with elastics.py
 Copyright (c) 2010-2020 Andrew Walker <a.walker@leeds.ac.uk>
 All rights reserved.
 """
+from __future__ import print_function
+
 import sys
 import os
 import optparse
@@ -29,7 +31,7 @@ def PointGroup2StrainPat(pointgroup):
     """
     supcode = 0
     if (pointgroup < 1):
-        print "Point group number " + str(pointgroup) + " not recognized.\n"
+        print("Point group number " + str(pointgroup) + " not recognized.")
         sys.exit(1)
     elif (pointgroup <= 2):
         # Triclinic
@@ -57,7 +59,7 @@ def PointGroup2StrainPat(pointgroup):
         # Cubic
         patt = 5
     else:
-        print "Point group number " + str(pointgroup) + " not recognized.\n"
+        print("Point group number " + str(pointgroup) + " not recognized.\n")
         sys.exit(1)
     return patt, supcode
 
@@ -232,8 +234,8 @@ def main(input_options, libmode=False):
         if (pointgroup == None):
             # Nothing from user and nothing from
             # .castep: we are in trouble
-            print "No point group found in .castep file so the strain pattern cannot be determined\n"
-            print "A strain pattern can also be provided using the -l flag\n"
+            print("No point group found in .castep file so the strain pattern cannot be determined")
+            print("A strain pattern can also be provided using the -l flag")
             sys.exit(1)
         else:
             # Use the value from .castep
@@ -246,22 +248,22 @@ def main(input_options, libmode=False):
             # Use users choice, but check and warn
             latticeCode = options.lattice
             if (latticeCode != PointGroup2StrainPat(pointgroup)[0]):
-                print "WARNING: User supplied lattice code is inconsistant with the point group\n"
-                print "         found by CASTEP. Using user supplied lattice code.\n"
+                print("WARNING: User supplied lattice code is inconsistant with the point group")
+                print("         found by CASTEP. Using user supplied lattice code.")
 		
-    print "Cell parameters: a = %f gamma = %f" % (a, al)
-    print "                 b = %f beta  = %f" % (b, be)
-    print "                 c = %f gamma = %f \n" % (c, ga)
-    print "Lattce vectors:  %7f %7f %7f " % (cell[0][0], cell[0][1], cell[0][2])
-    print "                 %7f %7f %7f " % (cell[1][0], cell[1][1], cell[1][2])
-    print "                 %7f %7f %7f \n " % (cell[2][0], cell[2][1], cell[2][2])
+    print("Cell parameters: a = %f gamma = %f" % (a, al))
+    print("                 b = %f beta  = %f" % (b, be))
+    print("                 c = %f gamma = %f \n" % (c, ga))
+    print("Lattce vectors:  %7f %7f %7f " % (cell[0][0], cell[0][1], cell[0][2]))
+    print("                 %7f %7f %7f " % (cell[1][0], cell[1][1], cell[1][2]))
+    print("                 %7f %7f %7f \n " % (cell[2][0], cell[2][1], cell[2][2]))
     patterns = GetStrainPatterns(latticeCode, supcode)
     numStrainPatterns = len(patterns)
-    print "Lattice type is ", latticeTypes[latticeCode]
-    print "Number of patterns: "+ str(numStrainPatterns) +"\n"
+    print("Lattice type is ", latticeTypes[latticeCode])
+    print("Number of patterns: "+ str(numStrainPatterns) +"\n")
 
     cijdat = open(seedname+".cijdat","w")
-    print "Writing strain data to ", seedname+".cijdat"
+    print("Writing strain data to ", seedname+".cijdat")
     cijdat.write(str(latticeCode) + ' ' + str(numsteps*2) + ' 0 ' + '0 \n')
     cijdat.write(str(maxstrain)+"\n")
 
@@ -293,9 +295,9 @@ def main(input_options, libmode=False):
 
                 pattern_name = seedname + "_cij__" + str(patt+1) + "__" + str((a*2)+1+neg)
 
-                print "Pattern Name = ", pattern_name
-                print "Pattern = ", this_pat
-                print "Magnitude = ", this_mag
+                print("Pattern Name = ", pattern_name)
+                print("Pattern = ", this_pat)
+                print("Magnitude = ", this_mag)
                 cijdat.write(pattern_name+"\n")
                 cijdat.write(str(this_strain[0]) + " " + str(this_strain[5]) + " " + str(this_strain[4]) + "\n")
                 cijdat.write(str(this_strain[5]) + " " + str(this_strain[1]) + " " + str(this_strain[3]) + "\n")
