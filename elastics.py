@@ -7,12 +7,14 @@ Part of the MaterialsGrid project
 Copyright (c) 2007-2008 Dan Wilson. All rights reserved.
 
 """
-
+from __future__ import print_function
 import sys
 import os
 import re
 import optparse
+
 import scipy as S
+
 import CijUtil
 import castep
 
@@ -30,7 +32,7 @@ def main(input_options, libmode=False):
 
 		for a in range(0,S.size(strain)):
 			if strain[a] != 0.0:
-				print strainDict[a], "component is non-zero"
+				print(strainDict[a], "component is non-zero")
 				strainsUsed[a] = 1
 			else:
 				strainsUsed[a] = 0
@@ -66,7 +68,7 @@ def main(input_options, libmode=False):
 
 		elif symmetryType == "Tetragonal":
 			if TetrHigh == "-1":
-				print "Higher-symmetry tetragonal (422,4mm,4-2m,4/mmm)"
+				print("Higher-symmetry tetragonal (422,4mm,4-2m,4/mmm)")
 				return S.matrix([[1, 7, 8, 0, 0, 0],
 						 [7, 1, 8, 0, 0, 0],
 						 [8, 8, 3, 0, 0, 0],
@@ -74,7 +76,7 @@ def main(input_options, libmode=False):
 					 	 [0, 0, 0, 0, 4, 0],
 						 [0, 0, 0, 0, 0, 6]])
 			else:
-				print "Lower-symmetry tetragonal (4,-4,4/m)"
+				print("Lower-symmetry tetragonal (4,-4,4/m)")
 				return S.matrix([[1, 7, 8, 0, 0, 11],
 						 [7, 1, 8, 0, 0, -11],
 						 [8, 8, 3, 0, 0, 0],
@@ -138,7 +140,7 @@ def main(input_options, libmode=False):
 				global P
 				import pylab as P
 			except ImportError:
-				print >> sys.stderr, "You need to have matplotlib installed for the --graphics option"
+				print("You need to have matplotlib installed for the --graphics option", file=sys.stderr)
 				sys.exit(1)
 				
 		return options, arguments
@@ -154,7 +156,7 @@ def main(input_options, libmode=False):
 	seedname = arguments[0]
 
 	cijdat = open(seedname+".cijdat","r")
-	print "\nReading strain data from ", seedname+".cijdat\n"
+	print("\nReading strain data from ", seedname+".cijdat\n")
 
 	numStrainPatterns = (len(cijdat.readlines())-2)/4 #total for all strain patterns
 
@@ -166,11 +168,11 @@ def main(input_options, libmode=False):
 	numsteps = int(numsteps)
 
 	symmetryType = latticeTypes[int(latticeType)]
-	print "System is", symmetryType,"\n"
+	print("System is", symmetryType,"\n")
 	
 	# get maximum magnitude of strains
 	magnitude = float(cijdat.readline())
-	print numsteps, "steps of maximum magnitude",magnitude
+	print(numsteps, "steps of maximum magnitude",magnitude)
 	
 	# if using graphics, do some initial set-up
 	if options.graphics:	
@@ -190,7 +192,7 @@ def main(input_options, libmode=False):
 				# P.setp(ylabels,fontsize=7)
 				P.text(0.4,0.4, "n/a")
 			
-	print "\n<>---------------------------- ANALYSIS ---------------------------------<>"		
+	print("\n<>---------------------------- ANALYSIS ---------------------------------<>")
 	
 	# initialise 1d array to store all 21 unique elastic constants - will be transformed into 6x6 matrix later
 	finalCijs = S.zeros((21,1))
@@ -198,7 +200,7 @@ def main(input_options, libmode=False):
 	
 	for patt in range(numStrainPatterns/numsteps):
 		
-		print "\nAnalysing pattern", patt+1, ":"
+		print("\nAnalysing pattern", patt+1, ":")
 		
 		for a in range(0,numsteps):  
 		
@@ -254,14 +256,14 @@ def main(input_options, libmode=False):
 				error  = stderr/sqrt(sum(square(strain[:,index2-1])))
 			
 			# print info about the fit
-			print '\n'
-			print     'Cij (gradient)          :    ', cijFitted
-			print     'Error in Cij            :    ', error
-			print     'Intercept               :    ', intercept
+			print('\n')
+			print('Cij (gradient)          :    ', cijFitted)
+			print('Error in Cij            :    ', error)
+			print('Intercept               :    ', intercept)
 			if abs(r) > 0.9:
-				print 'Correlation coefficient :    ',r
+				print('Correlation coefficient :    ',r)
 			else:
-				print 'Correlation coefficient :    ',r, '     <----- WARNING'
+				print('Correlation coefficient :    ',r, '     <----- WARNING')
 			
 			# if using graphics, add a subplot
 			if options.graphics:
@@ -322,7 +324,7 @@ def main(input_options, libmode=False):
 				finalCijs[3], errors[3] = __fit(4,4)                    # fit C44
 				
 			else:
-				print "Unsupported strain pattern"
+				print("Unsupported strain pattern")
 				sys.exit(1)
 				
 		elif symmetryType == "Trigonal-high/Hexagonal":
@@ -361,7 +363,7 @@ def main(input_options, libmode=False):
 					finalCijs[3], errors[3] = __fit(4,4)                # fit C44
 					
 			else:
-				print "Unsupported strain pattern"
+				print("Unsupported strain pattern")
 				sys.exit(1)
 				
 		elif symmetryType == "Trigonal-low":
@@ -384,7 +386,7 @@ def main(input_options, libmode=False):
 					finalCijs[3], errors[3] = __fit(4,4)                # fit C44
 					
 			else:
-				print "Unsupported strain pattern"
+				print("Unsupported strain pattern")
 				sys.exit(1)
 		
 		elif symmetryType == "Tetragonal":			
@@ -403,7 +405,7 @@ def main(input_options, libmode=False):
 					finalCijs[5], errors[5] = __fit(6,6)                # fit C66
 					
 			else:
-				print "Unsupported strain pattern"
+				print("Unsupported strain pattern")
 				sys.exit(1)
 									
 		elif symmetryType == "Orthorhombic":			
@@ -430,7 +432,7 @@ def main(input_options, libmode=False):
 					finalCijs[5], errors[5]  = __fit(6,6)                               # fit C66
 					
 			else:
-				print "Unsupported strain pattern"
+				print("Unsupported strain pattern")
 				sys.exit(1)
 				
 		elif symmetryType == "Monoclinic":			
@@ -468,7 +470,7 @@ def main(input_options, libmode=False):
 					finalCijs[16],errors[16] = __appendOrReplace(cij53,er53,__fit(3,5))      # fit C35
 					finalCijs[4], errors[4]  = __fit(5,5)                               # fit C55
 			else:
-				print "Unsupported strain pattern"
+				print("Unsupported strain pattern")
 				sys.exit(1)
 				
 		elif symmetryType == "Triclinic":
@@ -528,10 +530,10 @@ def main(input_options, libmode=False):
 					finalCijs[5],  errors[5]   = __fit(6,6)                               # fit C66		
 					
 			else:
-				print "Unsupported strain pattern"
+				print("Unsupported strain pattern")
 				sys.exit(1)
 		else:
-			print "Unsupported symmetry type. Exiting"
+			print("Unsupported symmetry type. Exiting")
 			sys.exit(1)
 	
 	if options.graphics:
@@ -563,55 +565,55 @@ def main(input_options, libmode=False):
 	# Tests
 	if symmetryType == "Cubic":
 		if finalCijs[3] <= 0:
-			print "\n *** WARNING: C44 is less than or equal to zero ***\n"
+			print("\n *** WARNING: C44 is less than or equal to zero ***\n")
 		if finalCijs[0] <= abs(finalCijs[6]):
-			print "\n *** WARNING: C11 is less than or equal to |C12| ***\n"
+			print("\n *** WARNING: C11 is less than or equal to |C12| ***\n")
 		if (finalCijs[0]+2*finalCijs[6]) <= 0:
-			print "\n *** WARNING: C11+2C12 is less than or equal to zero ***\n"
+			print("\n *** WARNING: C11+2C12 is less than or equal to zero ***\n")
 			
 	
-	print "\n<>---------------------------- RESULTS ----------------------------------<>\n"		
-	print "Final Cij matrix ("+units+"):"
-	print S.array2string(finalCijMatrix,max_line_width=130,suppress_small=True)
-	print "\nErrors on Cij matrix ("+units+"):"
-	print S.array2string(finalErrors,max_line_width=130,suppress_small=True)
+	print("\n<>---------------------------- RESULTS ----------------------------------<>\n")
+	print("Final Cij matrix ("+units+"):")
+	print(S.array2string(finalCijMatrix,max_line_width=130,suppress_small=True))
+	print("\nErrors on Cij matrix ("+units+"):")
+	print(S.array2string(finalErrors,max_line_width=130,suppress_small=True))
 
 	(sij, esij, covsij) = CijUtil.invertCij(finalCijMatrix,finalErrors)	
 	
-	print "\nFinal Sij matrix ("+units+"-1):"
-	print S.array2string(sij,max_line_width=130,suppress_small=True)
-	print "\nErrors on Sij matrix ("+units+"-1):"
-	print S.array2string(esij,max_line_width=130,suppress_small=True)
+	print("\nFinal Sij matrix ("+units+"-1):")
+	print(S.array2string(sij,max_line_width=130,suppress_small=True))
+	print("\nErrors on Sij matrix ("+units+"-1):")
+	print(S.array2string(esij,max_line_width=130,suppress_small=True))
 
-	print"\n<>----------------------------------------------------------------------<>\n"	
+	print("\n<>----------------------------------------------------------------------<>\n")
 	if symmetryType == "Cubic":
-		print "  Zener anisotropy index     : %6.5f +/- %6.5f" % (CijUtil.zenerAniso(finalCijMatrix,finalErrors))
-	print "  Universal anisotropy index : %6.5f +/- %6.5f" % (CijUtil.uAniso(finalCijMatrix,finalErrors))
-	print "  (Rangnthn and Ostoja-Starzewski, PRL 101, 055504)\n"
+		print("  Zener anisotropy index     : %6.5f +/- %6.5f" % (CijUtil.zenerAniso(finalCijMatrix,finalErrors)))
+	print("  Universal anisotropy index : %6.5f +/- %6.5f" % (CijUtil.uAniso(finalCijMatrix,finalErrors)))
+	print("  (Rangnthn and Ostoja-Starzewski, PRL 101, 055504)\n")
 
 	(youngX, youngY, youngZ, eyoungX, eyoungY, eyoungZ,
 	poissonXY, poissonXZ, poissonYX, poissonYZ, poissonZX, poissonZY,
 	epoissonXY, epoissonXZ, epoissonYX, epoissonYZ, epoissonZX, epoissonZY) = CijUtil.youngsmod(finalCijMatrix,finalErrors)
 	
 	format = "%18s : %11.5f %8s"
-	print "\n                          x           y           z"
-	print "%18s : %11.5f %11.5f %11.5f %6s" % ("Young's Modulus", youngX, youngY, youngZ, units)
-	print "%18s : %11.5f %11.5f %11.5f " % ("      +/-      ", eyoungX, eyoungY, eyoungZ)
+	print("\n                          x           y           z")
+	print("%18s : %11.5f %11.5f %11.5f %6s" % ("Young's Modulus", youngX, youngY, youngZ, units))
+	print("%18s : %11.5f %11.5f %11.5f " % ("      +/-      ", eyoungX, eyoungY, eyoungZ))
 
-	print "\n                        xy       xz       yx       yz       zx       zy"
+	print("\n                        xy       xz       yx       yz       zx       zy")
 	format = "%18s :  %6.5f  %6.5f  %6.5f  %6.5f  %6.5f  %6.5f"
-	print format % ("Poisson's Ratios", poissonXY, poissonXZ, poissonYX, poissonYZ, poissonZX, poissonZY)
-	print format % ("             +/-", epoissonXY, epoissonXZ, epoissonYX, epoissonYZ, epoissonZX, epoissonZY)
+	print(format % ("Poisson's Ratios", poissonXY, poissonXZ, poissonYX, poissonYZ, poissonZX, poissonZY))
+	print(format % ("             +/-", epoissonXY, epoissonXZ, epoissonYX, epoissonYZ, epoissonZX, epoissonZY))
 	
 	
-	print "\n<>--------------------- POLYCRYSTALLINE RESULTS -------------------------<>\n"		
+	print("\n<>--------------------- POLYCRYSTALLINE RESULTS -------------------------<>\n")
 	(voigtB, reussB, voigtG, reussG, hillB, hillG, evB, erB, evG, erG, ehB, ehG) = CijUtil.polyCij(finalCijMatrix, finalErrors)
 	format = "%16s : %11.5f %11.5f %11.5f %11.5f %11.5f %11.5f %6s"
-	print "                     Voigt         +/-       Reuss         +/-       Hill          +/-"
-	print format % ("Bulk Modulus", voigtB, evB, reussB, erB, hillB, ehB, units)
-	print format % ("Shear Modulus", voigtG, evG, reussG, erG, hillG, ehG, units)
+	print("                     Voigt         +/-       Reuss         +/-       Hill          +/-")
+	print(format % ("Bulk Modulus", voigtB, evB, reussB, erB, hillB, ehB, units))
+	print(format % ("Shear Modulus", voigtG, evG, reussG, erG, hillG, ehG, units))
 	
-	print "\n<>-----------------------------------------------------------------------<>\n"		
+	print("\n<>-----------------------------------------------------------------------<>\n")
 	
 	S.savetxt(seedname + '_cij.txt', finalCijMatrix)	
 	if options.latex:
