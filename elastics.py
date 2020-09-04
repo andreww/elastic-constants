@@ -158,7 +158,7 @@ def main(input_options, libmode=False):
     cijdat = open(seedname+".cijdat","r")
     print("\nReading strain data from ", seedname+".cijdat\n")
 
-    numStrainPatterns = (len(cijdat.readlines())-2)/4 #total for all strain patterns
+    numStrainPatterns = (len(cijdat.readlines())-2)//4 #total for all strain patterns
 
     #rewind
     cijdat.seek(0)
@@ -198,7 +198,7 @@ def main(input_options, libmode=False):
     finalCijs = S.zeros((21,1))
     errors = S.zeros((21,1))
     
-    for patt in range(numStrainPatterns/numsteps):
+    for patt in range(numStrainPatterns//numsteps):
         
         print("\nAnalysing pattern", patt+1, ":")
         
@@ -246,7 +246,7 @@ def main(input_options, libmode=False):
 
             (vmajor,vminor,vmicro) = re.split('\.',S.__version__)
 
-            if ( vmajor > 0 or vminor >= 7):
+            if ( int(vmajor) > 0 or int(vminor) >= 7):
                 error = stderr
             else:
                 # correct for scipy weirdness - see http://www.scipy.org/scipy/scipy/ticket/8
