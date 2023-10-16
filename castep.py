@@ -22,6 +22,13 @@ dotcastep_latt_RE = re.compile(r"""\sL?BFGS\s*:\sFinal\sConfiguration:\s*\n
             \s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s*\n""",
           re.VERBOSE)
 
+# New regular expression targeting just the 'Unit Cell' section
+dotcastep_latt_fixed_RE = re.compile(r"""\s+Unit\sCell\s*\n\s+\-+\s*\n
+            \s+Real\sLattice\(A\)\s+Reciprocal\sLattice\(1/A\)\s*\n
+            \s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s*\n
+            \s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s*\n
+            \s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s+([\+\-]?\d+.\d+)\s*\n""", re.VERBOSE)
+
 # Start of the 'final configuration'
 dotcastep_infinal_RE = re.compile(r"BFGS\s*: Final Configuration:")
 
@@ -37,8 +44,18 @@ def parse_dotcastep(seedname):
 	file. List of atoms may be empty (e.g. MgO)
 	"""
 	dotCastep = open(seedname+".castep","r")
-	# Find the lattice
-	latticeblock = dotcastep_latt_RE.findall(dotCastep.read())[-1] # Get the last block - handle concat restarts
+	# Find the lattice. First attempt to locate 'Final Configuration' followed by 'Unit Cell'
+	latticeblock = dotcastep_latt_RE.findall(dotCastep.read()) # Get the last block - handle concat restarts
+	if latticeblock:
+		print("Lattice block identified after 'Final Configuration'")
+		latticeblock = latticeblock[-1]
+	else:
+		print("No 'Unit Cell' after 'Final Configuration' - assuming fixed lattice relaxation.")
+		# If 'Unit Cell' does not proceed 'Final Configuration', unit cell parameters may have been fixed (using
+		# FIX_ALL_CELL in .cell file). This may occur e.g. if a grid method was used to optimize geometry followed
+		# by a fixed lattice paramter relaxation. In this case rewind and look instead just for 'Unit Cell'
+		dotCastep.seek(0)
+		latticeblock = dotcastep_latt_fixed_RE.findall(dotCastep.read())[-1]
 	lattice = []
 	lattice.append([float(latticeblock[0]), float(latticeblock[1]), float(latticeblock[2])])
 	lattice.append([float(latticeblock[6]), float(latticeblock[7]), float(latticeblock[8])])
@@ -121,6 +138,13 @@ def get_stress_dotcastep(filename):
 	   s(3,2), s(3,1), s(2,1).
 	"""
 	dotCastep = open(filename,"r")
+	# ---- by Andy ---- original code for python 2.5. the below seems to fix behaviour for python 3.8.5 (commented a line out below)
+	#print('filename=',filename)
+	#findAllMatches = stressRE.findall(dotCastep.read())
+	#stressData = findAllMatches[0]
+	#print('stressData=',stressData)
+	#quit()
+	# -----------------
 	stressData = stressRE.findall(dotCastep.read())[0]
 	dotCastep.close()
 	units = stressData[0]
