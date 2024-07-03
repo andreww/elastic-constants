@@ -11,6 +11,7 @@ All rights reserved.
 """
 from __future__ import print_function
 
+import logging
 import sys
 import os
 import optparse
@@ -22,6 +23,7 @@ import castep
 
 version = 0.1
 
+logger = logging.getLogger(__name__)
 
 def PointGroup2StrainPat(pointgroup):
     """
@@ -131,6 +133,8 @@ def get_options(input_options, libmode):
                 version="%prog "+str(version))
         p.add_option('--debug', '-d', action='store_true',
                 help="Debug mode (output to stdout rather than file)")
+        p.add_option('--verbose', '-v', action='store_true',
+                help="Verbose mode (extensive logging)")
         p.add_option('--steps', '-n', action='store', type='int',
                 dest="numsteps",
                 help='Number of positive strain magnitudes to impose' +
@@ -213,6 +217,21 @@ def main(input_options, libmode=False):
     options, arguments = get_options(input_options, libmode)
     seedname = arguments[0]
 
+    logformat = "%(levelname)s: %(message)s"
+    if options.debug:
+        # detailed log format for debug output
+        logformat = (
+            "[%(asctime)s-%(funcName)s()-%(filename)s:%(lineno)s]"
+            " %(levelname)s: %(message)s"
+        )
+        loglevel = logging.DEBUG
+    elif options.verbose:
+        loglevel = logging.INFO
+    else:
+        loglevel = logging.WARNING
+
+    logging.basicConfig(level=loglevel, format=logformat)
+    
     (cell,pointgroup,atoms) = castep.parse_dotcastep(seedname)
     # Re-align lattice vectors on cartisian system
     a, b, c, al, be, ga = cellCART2cellABC(cell)
@@ -262,51 +281,52 @@ def main(input_options, libmode=False):
     print("Lattice type is ", latticeTypes[latticeCode])
     print("Number of patterns: "+ str(numStrainPatterns) +"\n")
 
-    cijdat = open(seedname+".cijdat","w")
-    print("Writing strain data to ", seedname+".cijdat")
-    cijdat.write(str(latticeCode) + ' ' + str(numsteps*2) + ' 0 ' + '0 \n')
-    cijdat.write(str(maxstrain)+"\n")
+    with open(seedname+".cijdat","w") as cijdat:
+        print("Writing strain data to ", seedname+".cijdat")
+        cijdat.write(str(latticeCode) + ' ' + str(numsteps*2) + ' 0 ' + '0 \n')
+        cijdat.write(str(maxstrain)+"\n")
+    
+        # The order of these three loops matters for the analysis code.
+        for patt in range(numStrainPatterns):
+            this_pat = patterns[patt]
+            for a in range(0,numsteps):
+                for neg in range(0,2):
+                    if (neg == 0):
+                        this_mag = (float(a)+1) / (float(numsteps)) * maxstrain
+                    else:
+                        this_mag = -1.0 * (float(a)+1) / (float(numsteps)) * maxstrain
+                    disps = [x * this_mag for x in patterns[patt]]
+                    # Build the strain tensor (IRE convention but 1 -> 0 etc.)
+                    this_strain = [1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
+                    # diagonal elements - strain is displacment / lattice vector length
+                    this_strain[0] = disps[0] / np.sqrt(cell[0][0]**2+cell[0][1]**2+cell[0][2]**2)
+                    this_strain[1] = disps[1] / np.sqrt(cell[1][0]**2+cell[1][1]**2+cell[1][2]**2)
+                    this_strain[2] = disps[2] / np.sqrt(cell[2][0]**2+cell[2][1]**2+cell[2][2]**2)
+                    # off diagonals - we only strain upper right corner of cell matrix, so strain is 1/2*du/dx...
+                    this_strain[3] = 0.5 * (disps[3] / np.sqrt(cell[1][0]**2+cell[1][1]**2+cell[1][2]**2))
+                    this_strain[4] = 0.5 * (disps[4] / np.sqrt(cell[0][0]**2+cell[0][1]**2+cell[0][2]**2))
+                    this_strain[5] = 0.5 * (disps[5] / np.sqrt(cell[0][0]**2+cell[0][1]**2+cell[0][2]**2))
+    
+                    # Deform cell - only apply deformation to upper right corner
+                    defcell = [[cell[0][0]+disps[0], cell[0][1]+disps[5], cell[0][2]+disps[4]],
+                               [cell[1][0],          cell[1][1]+disps[1], cell[1][2]+disps[3]],
+                               [cell[2][0],          cell[2][1],          cell[2][2]+disps[2]]]
+    
+                    pattern_name = seedname + "_cij__" + str(patt+1) + "__" + str((a*2)+1+neg)
+    
+                    print("Pattern Name = ", pattern_name)
+                    print("Pattern = ", this_pat)
+                    print("Magnitude = ", this_mag)
+                    cijdat.write(pattern_name+"\n")
+                    cijdat.write(str(this_strain[0]) + " " + str(this_strain[5]) + " " + str(this_strain[4]) + "\n")
+                    cijdat.write(str(this_strain[5]) + " " + str(this_strain[1]) + " " + str(this_strain[3]) + "\n")
+                    cijdat.write(str(this_strain[4]) + " " + str(this_strain[3]) + " " + str(this_strain[2]) + "\n")
+                    castep.produce_dotcell(seedname, pattern_name+".cell", defcell, atoms)
+                    try:
+                        os.symlink(seedname+".param", pattern_name+".param")
+                    except FileExistsError as e:
+                        logger.warning(e)
 
-    # The order of these three loops matters for the analysis code.
-    for patt in range(numStrainPatterns):
-        this_pat = patterns[patt]
-        for a in range(0,numsteps):
-            for neg in range(0,2):
-                if (neg == 0):
-                    this_mag = (float(a)+1) / (float(numsteps)) * maxstrain
-                else:
-                    this_mag = -1.0 * (float(a)+1) / (float(numsteps)) * maxstrain
-                disps = [x * this_mag for x in patterns[patt]]
-                # Build the strain tensor (IRE convention but 1 -> 0 etc.)
-                this_strain = [1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
-                # diagonal elements - strain is displacment / lattice vector length
-                this_strain[0] = disps[0] / np.sqrt(cell[0][0]**2+cell[0][1]**2+cell[0][2]**2)
-                this_strain[1] = disps[1] / np.sqrt(cell[1][0]**2+cell[1][1]**2+cell[1][2]**2)
-                this_strain[2] = disps[2] / np.sqrt(cell[2][0]**2+cell[2][1]**2+cell[2][2]**2)
-                # off diagonals - we only strain upper right corner of cell matrix, so strain is 1/2*du/dx...
-                this_strain[3] = 0.5 * (disps[3] / np.sqrt(cell[1][0]**2+cell[1][1]**2+cell[1][2]**2))
-                this_strain[4] = 0.5 * (disps[4] / np.sqrt(cell[0][0]**2+cell[0][1]**2+cell[0][2]**2))
-                this_strain[5] = 0.5 * (disps[5] / np.sqrt(cell[0][0]**2+cell[0][1]**2+cell[0][2]**2))
-
-                # Deform cell - only apply deformation to upper right corner
-                defcell = [[cell[0][0]+disps[0], cell[0][1]+disps[5], cell[0][2]+disps[4]],
-                           [cell[1][0],          cell[1][1]+disps[1], cell[1][2]+disps[3]],
-                           [cell[2][0],          cell[2][1],          cell[2][2]+disps[2]]]
-
-                pattern_name = seedname + "_cij__" + str(patt+1) + "__" + str((a*2)+1+neg)
-
-                print("Pattern Name = ", pattern_name)
-                print("Pattern = ", this_pat)
-                print("Magnitude = ", this_mag)
-                cijdat.write(pattern_name+"\n")
-                cijdat.write(str(this_strain[0]) + " " + str(this_strain[5]) + " " + str(this_strain[4]) + "\n")
-                cijdat.write(str(this_strain[5]) + " " + str(this_strain[1]) + " " + str(this_strain[3]) + "\n")
-                cijdat.write(str(this_strain[4]) + " " + str(this_strain[3]) + " " + str(this_strain[2]) + "\n")
-                castep.produce_dotcell(seedname, pattern_name+".cell", defcell, atoms)
-                os.symlink(seedname+".param", pattern_name+".param")
-	
-
-	
 
 if __name__ == "__main__":
     main(sys.argv[1:])
