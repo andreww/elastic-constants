@@ -10,6 +10,7 @@ All rights reserved.
 
 import re
 import scipy as S
+import numpy as np
 
 version = 0.1
 
@@ -124,8 +125,42 @@ def get_stress_dotcastep(filename):
 	stressData = stressRE.findall(dotCastep.read())[0]
 	dotCastep.close()
 	units = stressData[0]
-	stress = S.array([float(stressData[1]),float(stressData[4]),
+	stress = np.array([float(stressData[1]),float(stressData[4]),
                           float(stressData[6]),float(stressData[5]),
                           float(stressData[3]),float(stressData[2])])
 	return(units, stress)
 
+# regular expression which matches the volume/density block from a .castep file
+densityRE = re.compile(r"\s+\sCurrent\scell\svolume\s+=\s+(\d+\.\d+)\s+A\*\*3\s*\n\s+density\s+=\s+(\d+.\d+)\s+AMU\/A\*\*3\s*\n\s+=\s+(\d+.\d+)\s+g\/cm\^3\s*\n")
+
+def get_density_dotcastep(seedname):
+	"""Extract the optimised density from seedname.castep file
+
+	   Returns density in kg/m3.
+	"""
+    
+    # This should be the starting, stress-free geometry
+	filename = seedname + ".castep"
+	dotCastep = open(filename,"r")
+	(cell_volume, density_amu_ang, density_g_cm3) = densityRE.findall(dotCastep.read())[0]
+	density_kg_m3 = float(density_g_cm3)*1e3
+	volume_m3 = float(cell_volume)*1e-30
+	dotCastep.close()
+	return density_kg_m3, volume_m3
+
+# regular expression which matches the number of particles block from a .castep file
+nparticlesRE = re.compile("\s+\sTotal\snumber\sof\sions\sin\scell\s+=\s+(\d+)\s*\n\s+Total\snumber\sof\sspecies\sin\scell\s+=\s+(\d+)\s*\n\s+Max\snumber\sof\sany\sone\sspecies\s+=\s+(\d+)\s*\n")
+
+def get_nparticles_dotcastep(seedname):
+	"""Extract the number of particles in the cell from seedname.castep file
+
+	   Returns integer number of particles.
+	"""
+
+	filename = seedname + ".castep"
+	dotCastep = open(filename,"r")
+	(n_ions, n_species, max_species) = nparticlesRE.findall(dotCastep.read())[0]
+	N_ions = int(n_ions)
+	N_species = int(n_species)
+	dotCastep.close()
+	return N_ions, N_species
