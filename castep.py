@@ -10,6 +10,7 @@ All rights reserved.
 
 import re
 import scipy as S
+import numpy as np
 
 version = 0.1
 
@@ -124,7 +125,7 @@ def get_stress_dotcastep(filename):
 	stressData = stressRE.findall(dotCastep.read())[0]
 	dotCastep.close()
 	units = stressData[0]
-	stress = S.array([float(stressData[1]),float(stressData[4]),
+	stress = np.array([float(stressData[1]),float(stressData[4]),
                           float(stressData[6]),float(stressData[5]),
                           float(stressData[3]),float(stressData[2])])
 	return(units, stress)

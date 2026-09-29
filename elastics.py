@@ -45,7 +45,7 @@ def main(input_options, libmode=False):
 
     def cMatrix(symmetryType,TetrHigh):
         if symmetryType == "Cubic" :
-            return S.matrix([[1, 7, 7, 0, 0, 0],
+            return np.matrix([[1, 7, 7, 0, 0, 0],
                      [7, 1, 7, 0, 0, 0],
                      [7, 7, 1, 0, 0, 0],
                      [0, 0, 0, 4, 0, 0],
@@ -53,7 +53,7 @@ def main(input_options, libmode=False):
                      [0, 0, 0, 0, 0, 4]])
 
         elif symmetryType == "Trigonal-high/Hexagonal":
-            return S.matrix([[1,  7,  8,  9,  0,  0],
+            return np.matrix([[1,  7,  8,  9,  0,  0],
                      [7,  1,  8, -9,  0,  0],
                      [8,  8,  3,  0,  0,  0],
                      [9, -9,  0,  4,  0,  0],
@@ -61,7 +61,7 @@ def main(input_options, libmode=False):
                      [0,  0,  0,  0,  9,  6]])
 
         elif symmetryType == "Trigonal-low":
-            return S.matrix([[ 1,   7, 8,   9,  10,   0],
+            return np.matrix([[ 1,   7, 8,   9,  10,   0],
                      [ 7,   1, 8,  -9, -10,   0],
                      [ 8,   8, 3,   0,   0,   0],
                      [ 9,  -9, 0,   4,   0, -10],
@@ -71,7 +71,7 @@ def main(input_options, libmode=False):
         elif symmetryType == "Tetragonal":
             if TetrHigh == "-1":
                 print("Higher-symmetry tetragonal (422,4mm,4-2m,4/mmm)")
-                return S.matrix([[1, 7, 8, 0, 0, 0],
+                return np.matrix([[1, 7, 8, 0, 0, 0],
                          [7, 1, 8, 0, 0, 0],
                          [8, 8, 3, 0, 0, 0],
                          [0, 0, 0, 4, 0, 0],
@@ -79,7 +79,7 @@ def main(input_options, libmode=False):
                          [0, 0, 0, 0, 0, 6]])
             else:
                 print("Lower-symmetry tetragonal (4,-4,4/m)")
-                return S.matrix([[1, 7, 8, 0, 0, 11],
+                return np.matrix([[1, 7, 8, 0, 0, 11],
                          [7, 1, 8, 0, 0, -11],
                          [8, 8, 3, 0, 0, 0],
                          [0, 0, 0, 4, 0, 0],
@@ -87,7 +87,7 @@ def main(input_options, libmode=False):
                          [11, -11, 0, 0, 0, 6]])
 
         elif symmetryType == "Orthorhombic":
-            return S.matrix([[ 1,  7,  8,  0,  0,  0],
+            return np.matrix([[ 1,  7,  8,  0,  0,  0],
                      [ 7,  2, 12,  0,  0,  0],
                      [ 8, 12,  3,  0,  0,  0],
                      [ 0,  0,  0,  4,  0,  0],
@@ -95,7 +95,7 @@ def main(input_options, libmode=False):
                      [ 0,  0,  0,  0,  0,  6]])
 
         elif symmetryType == "Monoclinic":
-            return S.matrix([[ 1,  7,  8,  0,  10,  0],
+            return np.matrix([[ 1,  7,  8,  0,  10,  0],
                      [ 7,  2, 12,  0, 14,  0],
                      [ 8, 12,  3,  0, 17,  0],
                      [ 0,  0,  0,  4,  0,  20],
@@ -103,7 +103,7 @@ def main(input_options, libmode=False):
                      [ 0,  0,  0, 20,  0,  6]])
 
         elif symmetryType == "Triclinic":
-            return S.matrix([[ 1,  7,  8,  9,  10, 11],
+            return np.matrix([[ 1,  7,  8,  9,  10, 11],
                      [ 7,  2, 12,  13, 14,  15],
                      [ 8, 12,  3,  16, 17,  18],
                      [ 9, 13, 16,  4,  19,  20],
@@ -241,7 +241,8 @@ def main(input_options, libmode=False):
         """
         
         def __fit(index1, index2):
-            from scipy import stats, sqrt, square
+            from scipy import stats
+            from numpy import sqrt, square
             
             # do the fit
             (cijFitted,intercept,r,tt,stderr) = stats.linregress(strain[:,index2-1],stress[:,index1-1])
